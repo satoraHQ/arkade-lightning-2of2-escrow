@@ -1,0 +1,30 @@
+{
+  "name": "@arkade-peach-escrow-poc/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@arkade-os/sdk": "^0.4.23",
+    "@arkade-peach-escrow-poc/shared": "*",
+    "@lendasat/lendaswap-sdk-pure": "^0.2.25",
+    "@noble/curves": "^2.2.0",
+    "@scure/base": "^2.0.0",
+    "@scure/btc-signer": "^2.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0"
+  }
+}
