@@ -11,6 +11,22 @@ address they control.
 > **PoC status.** Mutinynet/signet only. Keys held in browser localStorage with
 > no encryption. Do not use with real funds.
 
+
+## Quick start
+
+Three terminals, one recipe each (requires [`just`](https://github.com/casey/just)
+and Node 20+):
+
+```bash
+just install     # one-time: pull dependencies for all workspaces
+just server      # http://localhost:3210  (auto-creates .env on first run)
+just seller      # http://localhost:5173
+just buyer       # http://localhost:5174  (server must be up)
+```
+
+Faucet with testnet coins:
+- https://faucet.mutinynet.com/
+
 ## Architecture
 
 ```
@@ -184,21 +200,6 @@ the server sign a commitment over its pubkey.
 - Server: Express, sqlite (better-sqlite3).
 - Frontends: Vite + React + TypeScript.
 
-## Quick start
-
-Three terminals, one recipe each (requires [`just`](https://github.com/casey/just)
-and Node 20+):
-
-```bash
-just install     # one-time: pull dependencies for all workspaces
-just server      # http://localhost:3210  (auto-creates .env on first run)
-just seller      # http://localhost:5173
-just buyer       # http://localhost:5174  (server must be up)
-```
-
-`just --list` shows the rest (`typecheck`, `build`, `reset-server`,
-`healthz`). The buyer fetches the ASP pubkey from the server's
-`/healthz` automatically — no manual env wiring needed.
 
 ## Project layout
 
@@ -242,37 +243,6 @@ Frontend env vars:
 ```
 VITE_SERVER_URL=http://localhost:3210     # if running server elsewhere
 ```
-
-## Deferred / stubs
-
-The skeleton lands the offer / escrow-registration / funding-detection /
-take pipeline end-to-end. The remaining release-tx orchestration is
-stubbed in two places:
-
-1. **Server `release-psbt` and `release-sig` endpoints** — must build the
-   cooperative ark-tx via `buildOffchainTx` (input: escrow VTXO,
-   outputs: buyer payout + Peach fee), distribute to seller, merge the
-   seller's partial sig with the peach sig, call
-   `arkProvider.submitTx`, peach-sign + seller-sign the returned
-   checkpoints, then `arkProvider.finalizeTx`. Critical invariant from
-   `lendasat/ark-escrow/docs/protocol.md:84-90` — the seller's
-   checkpoint sigs must never reach the server before it has co-signed
-   the ark-tx.
-2. **Lightning ingress / egress (Lendaswap)** — Lendaswap has a
-   mutinynet/signet endpoint at `https://mutinynetswap.lendasat.com`
-   that pairs with our mutinynet ASP, but the actual swap flows are not
-   yet wired in. The seller's "fund via LN" screen still displays the
-   escrow address for manual Arkade-side funding; the buyer's withdraw
-   is informational. Implementation note: `@lendasat/lendaswap-sdk-pure`
-   has a heavy EVM dependency stack (`@zerodev/sdk`, `viem`) that
-   doesn't bundle cleanly in the browser without polyfills. Either the
-   server proxies the swap calls, or the frontend gains the polyfills.
-   The signing helper used by the frontend (`signEscrowArkTx`) is
-   already lifted into `shared/src/sign.ts` to keep the frontend bundle
-   thin.
-
-The pre-signed refund tx is not yet built either — server should
-construct it once funding is detected (mirrors Peach's flow).
 
 ## References
 
