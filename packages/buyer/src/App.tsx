@@ -23,6 +23,7 @@ export function App() {
   const [contract, setContract] = useState<ContractStatus | null>(null);
   const [aspPubKey, setAspPubKey] = useState<string | null>(null);
   const [arkServerUrl, setArkServerUrl] = useState<string | null>(null);
+  const [lendaswapApiUrl, setLendaswapApiUrl] = useState<string | null>(null);
   const [exitTimelock, setExitTimelock] = useState<{
     value: number;
     type: 'blocks' | 'seconds';
@@ -34,6 +35,7 @@ export function App() {
       .then((h) => {
         setAspPubKey(h.aspPubKey);
         setArkServerUrl(h.arkServerUrl);
+        setLendaswapApiUrl(h.lendaswapApiUrl);
         setExitTimelock(h.exitTimelock);
       })
       .catch((e) => console.error('[buyer] healthz failed:', e));
@@ -100,11 +102,16 @@ export function App() {
         />
       ) : null}
 
-      {step === 'withdraw' && contract && arkServerUrl && exitTimelock ? (
+      {step === 'withdraw' &&
+      contract &&
+      arkServerUrl &&
+      lendaswapApiUrl &&
+      exitTimelock ? (
         <Withdraw
           wallet={wallet}
           offerId={contract.offerId}
           arkServerUrl={arkServerUrl}
+          lendaswapApiUrl={lendaswapApiUrl}
           exitTimelock={exitTimelock}
           status={contract}
         />

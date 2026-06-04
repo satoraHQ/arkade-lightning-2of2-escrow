@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { hex } from '@scure/base';
-import {
-  EscrowVtxoScript,
-  type CreateOfferResponse,
-  type FundingStatus,
-  type RegisterEscrowResponse,
+import { EscrowVtxoScript } from '@satora/escrow';
+import type {
+  CreateOfferResponse,
+  FundingStatus,
+  RegisterEscrowResponse,
 } from '@arkade-peach-escrow-poc/shared';
 import { findContractForOffer, type Store } from '../store.js';
 import type { ArkContext } from '../ark.js';
@@ -60,7 +60,7 @@ export function offerRouter(deps: OfferDeps): Router {
     const sellerPk = hex.decode(body.sellerPubKey);
     const escrow = new EscrowVtxoScript({
       sellerPubKey: sellerPk,
-      peachServerPubKey: peach.publicKey,
+      arbiterPubKey: peach.publicKey,
       aspPubKey: ark.aspPubKey,
       exitTimelock: ark.exitTimelock,
     });
@@ -72,7 +72,7 @@ export function offerRouter(deps: OfferDeps): Router {
 
     const response: RegisterEscrowResponse = {
       escrowVtxoArkAddress: offer.escrowArkAddress,
-      peachServerPubKey: peach.publicKeyHex,
+      arbiterPubKey: peach.publicKeyHex,
       aspPubKey: ark.aspPubKeyHex,
       csvTimelock: {
         value: Number(ark.exitTimelock.value),

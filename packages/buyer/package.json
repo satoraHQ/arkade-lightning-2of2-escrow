@@ -10,10 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arkade-os/sdk": "^0.4.23",
+    "@arkade-os/sdk": "^0.4.32",
     "@arkade-peach-escrow-poc/shared": "*",
     "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.0.0",
+    "@satora/escrow": "0.0.1-alpha.1",
+    "@satora/escrow-client": "0.0.1-alpha.3",
+    "@satora/swap": "0.0.1-alpha.1",
     "@scure/base": "^2.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
@@ -22,6 +25,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "vite-plugin-node-polyfills": "^0.22.0"
   }
 }

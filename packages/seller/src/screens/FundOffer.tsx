@@ -1,48 +1,59 @@
 import { useEffect, useRef, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import type { FundFromLightningHandle } from '@satora/escrow-client';
+import type { SwapStatus } from '@satora/swap';
 import { api } from '../api.js';
-import {
-  claimSwapToArk,
-  startLightningToArkadeSwap,
-  subscribeToSwap,
-} from '../lendaswap.js';
+import { claimSwapToArk, subscribeToSwap } from '../lendaswap.js';
+import { buildEscrowOptions, getEscrowClient } from '../escrow.js';
+import { deriveOfferKey, type Wallet } from '../wallet.js';
+import { CopyButton, CopyField, middleEllipsis } from '../ui.js';
 import type {
   FundingStatus,
   RegisterEscrowResponse,
 } from '@arkade-peach-escrow-poc/shared';
-import type {SwapStatus} from "@lendasat/lendaswap-sdk-pure";
 
 /**
- * Drives the LN → Arkade swap that pays the escrow.
+ * Drives the LN → Arkade swap that pays the escrow, via
+ * `@satora/escrow-client`'s `fundFromLightning`.
  *
  * Flow:
- * 1. Click "generate invoice" → SDK creates a Lendaswap swap with the
- *    escrow's Ark address as `targetAddress`. We get back a BOLT11.
+ * 1. Click "generate invoice" → reconstruct + verify the escrow script,
+ *    then `fundFromLightning` creates a Lendaswap swap targeting the escrow
+ *    address and starts watching it. We get back a BOLT11 + a handle.
  * 2. Display the invoice. Seller pays it from any LN wallet.
- * 3. Poll the swap. Once status reaches `serverfunded`, the Lendaswap
- *    server has funded its side; the seller's SDK then claims the
- *    Arkade VHTLC, paying out to the escrow VTXO address.
- * 4. The Peach server's existing funding poller picks up the new VTXO
- *    and flips the offer to FUNDED.
+ * 3. On `serverfunded`, `handle.awaitFunded()` claims the Arkade VHTLC into
+ *    the escrow and resolves once the VTXO is observed. After a page
+ *    refresh the handle is gone, so we fall back to the raw resume claim.
+ * 4. The Peach server's funding poller picks up the new VTXO and flips the
+ *    offer to FUNDED.
  */
 export function FundOffer({
+  wallet,
   offerId,
   escrow,
   amountSats,
   lendaswapApiUrl,
+  arkServerUrl,
   swapId: initialSwapId,
   invoice: initialInvoice,
   onSwap,
   onFunded,
 }: {
+  wallet: Wallet;
   offerId: string;
   escrow: RegisterEscrowResponse;
   amountSats: number;
   lendaswapApiUrl: string | null;
+  arkServerUrl: string | null;
   swapId: string | null;
   invoice: string | null;
   onSwap: (swapId: string, invoice: string) => void;
   onFunded: (status: FundingStatus) => void;
 }) {
+  // The funding handle from `fundFromLightning`, when this page created the
+  // swap. Null after a refresh (swapId/invoice come from the persisted
+  // session) — the claim then uses the raw resume path below.
+  const handleRef = useRef<FundFromLightningHandle | null>(null);
   const [swapId, setSwapId] = useState<string | null>(initialSwapId);
   const [invoice, setInvoice] = useState<string | null>(initialInvoice);
   const [generating, setGenerating] = useState(false);
@@ -90,11 +101,20 @@ export function FundOffer({
       if (status === 'serverfunded' && !claiming && !claimed) {
         setClaiming(true);
         try {
-          await claimSwapToArk(
-            lendaswapApiUrl,
-            swapId,
-            escrow.escrowVtxoArkAddress,
-          );
+          const handle = handleRef.current;
+          if (handle) {
+            // escrow-client claims the VHTLC into the escrow and waits for
+            // the VTXO to land (5 min absorbs server-funding + indexing lag).
+            await handle.awaitFunded(300_000);
+          } else {
+            // Resume path: page was refreshed after the swap was created, so
+            // we no longer hold the handle. Claim directly via the swap client.
+            await claimSwapToArk(
+              lendaswapApiUrl,
+              swapId,
+              escrow.escrowVtxoArkAddress,
+            );
+          }
           if (!cancelled) setClaimed(true);
         } catch (e) {
           if (!cancelled) setErr(`claim failed: ${String(e)}`);
@@ -125,21 +145,28 @@ export function FundOffer({
   ]);
 
   async function generate() {
-    if (!lendaswapApiUrl) {
-      setErr('lendaswapApiUrl not loaded yet');
+    if (!lendaswapApiUrl || !arkServerUrl) {
+      setErr('config not loaded yet');
       return;
     }
     setGenerating(true);
     setErr(null);
     try {
-      const { response } = await startLightningToArkadeSwap(
+      const { client, network } = await getEscrowClient(
         lendaswapApiUrl,
-        amountSats,
-        escrow.escrowVtxoArkAddress,
+        arkServerUrl,
       );
-      setSwapId(response.id);
-      setInvoice(response.bolt11_invoice);
-      onSwap(response.id, response.bolt11_invoice);
+      const { publicKey: sellerPubKey } = deriveOfferKey(wallet.seed, offerId);
+      const options = buildEscrowOptions(sellerPubKey, escrow, network);
+      const handle = await client.fundFromLightning({
+        escrow: options,
+        network,
+        amountSats,
+      });
+      handleRef.current = handle;
+      setSwapId(handle.swapId);
+      setInvoice(handle.invoice);
+      onSwap(handle.swapId, handle.invoice);
     } catch (e) {
       setErr(String(e));
     } finally {
@@ -152,64 +179,86 @@ export function FundOffer({
   const autoTriedRef = useRef(false);
   useEffect(() => {
     if (autoTriedRef.current) return;
-    if (invoice || !lendaswapApiUrl) return;
+    if (invoice || !lendaswapApiUrl || !arkServerUrl) return;
     autoTriedRef.current = true;
     void generate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lendaswapApiUrl, invoice]);
+  }, [lendaswapApiUrl, arkServerUrl, invoice]);
+
+  const swapDone = swapStatus === 'serverfunded' || claiming || claimed;
+  const swapLabel = claimed
+    ? 'claimed'
+    : claiming
+      ? 'claiming…'
+      : (swapStatus ?? 'pending');
 
   return (
     <div className="card">
       <h2>Fund the escrow via Lightning</h2>
-
       <p className="muted">
-        offer: <span className="mono">{offerId}</span>
+        offer <span className="mono">{middleEllipsis(offerId, 8, 8)}</span>
       </p>
-      <p className="muted">escrow Ark address:</p>
-      <p className="mono">{escrow.escrowVtxoArkAddress}</p>
-      <p>
-        amount: <strong>{amountSats}</strong> sats
-      </p>
+
+      <div className="summary">
+        <CopyField
+          label="escrow Ark address"
+          value={escrow.escrowVtxoArkAddress}
+          display={middleEllipsis(escrow.escrowVtxoArkAddress, 16, 12)}
+        />
+        <CopyField
+          label="amount"
+          value={String(amountSats)}
+          display={`${amountSats} sats`}
+          mono={false}
+        />
+      </div>
 
       {!invoice ? (
         <button
           className="primary"
           onClick={generate}
-          disabled={generating || !lendaswapApiUrl}
+          disabled={generating || !lendaswapApiUrl || !arkServerUrl}
         >
           {generating ? 'creating swap…' : 'generate Lightning invoice'}
         </button>
       ) : (
-        <>
-          <p className="muted">pay this BOLT11 invoice from any LN wallet:</p>
-          <pre className="mono">{invoice}</pre>
-          <button
-            onClick={() => navigator.clipboard.writeText(invoice).catch(() => {})}
-          >
-            copy invoice
-          </button>
-          <p>
-            swap status: <strong>{swapStatus ?? 'pending'}</strong>
-            {claiming ? ' (claiming…)' : null}
-            {claimed ? ' — Ark claim sent, waiting for VTXO confirmation' : null}
-          </p>
-        </>
+        <div className="invoice-block">
+          <div className="field-label">
+            pay this BOLT11 invoice from any LN wallet
+          </div>
+          <a className="qr" href={`lightning:${invoice}`} title="open in wallet">
+            <QRCodeSVG value={invoice.toUpperCase()} size={208} marginSize={2} />
+          </a>
+          <div className="field-row">
+            <span className="mono field-value">
+              {middleEllipsis(invoice, 14, 12)}
+            </span>
+            <CopyButton value={invoice} label="copy invoice" />
+          </div>
+        </div>
       )}
 
-      <p>
-        funding status: <strong>{funding.status}</strong>
-        {funding.fundingTxid ? (
-          <>
-            {' '}
-            · <span className="mono">{funding.fundingTxid}</span>
-          </>
-        ) : null}
-        {funding.fundedAmountSats !== undefined ? (
-          <span className="muted"> · {funding.fundedAmountSats} sats</span>
-        ) : null}
-      </p>
+      <div className="status-row">
+        <span className={`badge ${swapDone ? 'badge-ok' : ''}`}>
+          swap: {swapLabel}
+        </span>
+        <span
+          className={`badge ${funding.status === 'FUNDED' ? 'badge-ok' : ''}`}
+        >
+          funding: {funding.status}
+          {funding.fundedAmountSats !== undefined
+            ? ` · ${funding.fundedAmountSats} sats`
+            : ''}
+        </span>
+      </div>
+      {funding.fundingTxid ? (
+        <p className="muted">
+          funding tx{' '}
+          <span className="mono">{middleEllipsis(funding.fundingTxid, 12, 12)}</span>
+        </p>
+      ) : null}
 
-      {err ? <p style={{ color: 'crimson' }}>{err}</p> : null}
+      {err ? <p className="error">{err}</p> : null}
     </div>
   );
 }

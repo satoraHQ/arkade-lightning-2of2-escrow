@@ -1,27 +1,19 @@
 import {
   Client,
   IdbSwapStorage,
-  IdbWalletStorage, type SwapStatus,
-} from '@lendasat/lendaswap-sdk-pure';
-
-/**
- * Cherry-picked subset of the swap response we actually consume —
- * lets us return an explicit type without depending on a non-public
- * subpath inside the SDK.
- */
-export interface LnArkadeSwap {
-  response: {
-    id: string;
-    bolt11_invoice: string;
-    status?: string;
-    arkade_vhtlc_address?: string;
-  };
-}
+  IdbWalletStorage,
+  type SwapStatus,
+} from '@satora/swap';
 
 /**
  * One Lendaswap Client per (baseUrl) for the lifetime of the page. The
  * SDK keeps its mnemonic in IndexedDB (IdbWalletStorage) so refreshes
  * reuse the same depositor key tree and pending swaps stay claimable.
+ *
+ * This client is injected into `@satora/escrow-client`'s EscrowClient (it
+ * structurally satisfies the swap surface) — the escrow-client owns swap
+ * creation + claim; here we keep it only to drive the live status UI and
+ * the post-refresh resume claim below.
  */
 const cache = new Map<string, Promise<Client>>();
 
@@ -36,27 +28,6 @@ export function getLendaswapClient(baseUrl: string): Promise<Client> {
     cache.set(baseUrl, cached);
   }
   return cached;
-}
-
-/**
- * Kick off a LN → Arkade swap. The returned `response.bolt11_invoice`
- * is what the seller pays from any LN wallet; the swap's `id` is what
- * we poll until status reaches `serverfunded`.
- *
- * `targetAddress` is the destination of the user-side claim ark-tx —
- * the escrow VTXO address we want the funds to land at.
- */
-export async function startLightningToArkadeSwap(
-  baseUrl: string,
-  satsReceive: number,
-  targetArkAddress: string,
-): Promise<LnArkadeSwap> {
-  const client = await getLendaswapClient(baseUrl);
-  const result = await client.createLightningToArkadeSwap({
-    satsReceive,
-    targetAddress: targetArkAddress,
-  });
-  return result as unknown as LnArkadeSwap;
 }
 
 /**

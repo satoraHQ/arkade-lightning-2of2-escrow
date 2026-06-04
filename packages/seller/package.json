@@ -10,12 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arkade-os/sdk": "^0.4.23",
+    "@arkade-os/sdk": "^0.4.32",
     "@arkade-peach-escrow-poc/shared": "*",
-    "@lendasat/lendaswap-sdk-pure": "^0.2.25",
     "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.0.0",
+    "@satora/escrow": "0.0.1-alpha.1",
+    "@satora/escrow-client": "0.0.1-alpha.3",
+    "@satora/swap": "0.0.1-alpha.1",
     "@scure/base": "^2.0.0",
+    "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

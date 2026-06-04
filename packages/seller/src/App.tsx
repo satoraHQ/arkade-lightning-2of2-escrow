@@ -61,13 +61,17 @@ export function App() {
   const { step, offerId, sellAmountSats, escrow, funding } = session;
   const setStep = (next: Step) => setSession((s) => ({ ...s, step: next }));
 
-  // Pull lendaswapApiUrl from server's healthz so the FundOffer screen
-  // knows where to point the SDK Client.
+  // Pull lendaswapApiUrl + arkServerUrl from server's healthz so the
+  // FundOffer screen can build the swap client and the Ark providers.
   const [lendaswapApiUrl, setLendaswapApiUrl] = useState<string | null>(null);
+  const [arkServerUrl, setArkServerUrl] = useState<string | null>(null);
   useEffect(() => {
     api
       .health()
-      .then((h) => setLendaswapApiUrl(h.lendaswapApiUrl))
+      .then((h) => {
+        setLendaswapApiUrl(h.lendaswapApiUrl);
+        setArkServerUrl(h.arkServerUrl);
+      })
       .catch((e) => console.error('[seller] healthz failed:', e));
   }, []);
 
@@ -114,10 +118,12 @@ export function App() {
 
       {step === 'fund' && offerId && escrow && sellAmountSats !== null ? (
         <FundOffer
+          wallet={wallet}
           offerId={offerId}
           escrow={escrow}
           amountSats={sellAmountSats}
           lendaswapApiUrl={lendaswapApiUrl}
+          arkServerUrl={arkServerUrl}
           swapId={session.lnSwapId}
           invoice={session.lnInvoice}
           onSwap={(swapId, invoice) =>
