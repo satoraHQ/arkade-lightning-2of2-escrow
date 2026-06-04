@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { hex } from '@scure/base';
 import { schnorr } from '@noble/curves/secp256k1.js';
-import {
-  payoutCommitmentMessage,
-  type OfferSummary,
-} from '@arkade-peach-escrow-poc/shared';
+import { payoutCommitmentMessage } from '@satora/escrow';
+import type { OfferSummary } from '@arkade-peach-escrow-poc/shared';
 import { api } from '../api.js';
 import { buildPayoutArkAddress, deriveTakeKey, type Wallet } from '../wallet.js';
 import { ExplorerAddress } from '../explorer.js';

@@ -51,7 +51,7 @@ export interface RegisterEscrowRequest {
 
 export interface RegisterEscrowResponse {
   escrowVtxoArkAddress: ArkAddress;
-  peachServerPubKey: HexPubKey;
+  arbiterPubKey: HexPubKey;
   aspPubKey: HexPubKey;
   csvTimelock: { value: number; type: 'blocks' | 'seconds' };
 }
@@ -107,6 +107,18 @@ export interface ReleasePsbtResponse {
   arkTxPsbtB64: string;
   /** Same shape, for the checkpoint transactions. */
   checkpointPsbtsB64: string[];
+  /**
+   * The release outputs the seller should expect, so it can run
+   * `verifyReleaseArkTx` over the PSBTs before signing. Amounts are sats as
+   * `number` (PoC-only).
+   */
+  expected: {
+    escrowOutpoint: { txid: ArkTxid; vout: number };
+    buyerArkAddress: ArkAddress;
+    buyerAmountSats: number;
+    feeArkAddress: ArkAddress;
+    feeAmountSats: number;
+  };
 }
 
 export interface SubmitSellerSigRequest {

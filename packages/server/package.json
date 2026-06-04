@@ -10,9 +10,10 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@arkade-os/sdk": "^0.4.23",
+    "@arkade-os/sdk": "^0.4.32",
     "@arkade-peach-escrow-poc/shared": "*",
     "@lendasat/lendaswap-sdk-pure": "^0.2.25",
+    "@satora/escrow": "0.0.1-alpha.1",
     "@noble/curves": "^2.2.0",
     "@scure/base": "^2.0.0",
     "@scure/btc-signer": "^2.0.0",

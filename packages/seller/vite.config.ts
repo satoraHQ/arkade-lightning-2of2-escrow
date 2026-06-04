@@ -12,4 +12,9 @@ export default defineConfig({
   ],
   server: { port: 5173 },
   define: { global: 'globalThis' },
+  // @satora/escrow (a linked file: dep) and this app both pull in
+  // @arkade-os/sdk. Dedupe so the bundle has a single copy — otherwise
+  // `EscrowVtxoScript extends VtxoScript` can hit two different VtxoScript
+  // classes ("Class extends undefined").
+  resolve: { dedupe: ['@arkade-os/sdk', '@scure/base'] },
 });

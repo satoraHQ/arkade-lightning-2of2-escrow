@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
+import { Transaction } from '@arkade-os/sdk';
+import { base64 } from '@scure/base';
 import {
   signEscrowArkTx,
   signEscrowCheckpoints,
-  type FundingStatus,
-  type RegisterEscrowResponse,
+  verifyReleaseArkTx,
+} from '@satora/escrow';
+import type {
+  FundingStatus,
+  RegisterEscrowResponse,
 } from '@arkade-peach-escrow-poc/shared';
 import { api } from '../api.js';
 import { deriveOfferKey, type Wallet } from '../wallet.js';
@@ -64,7 +69,23 @@ export function SignRelease({
     setErr(null);
     try {
       const psbts = await api.releasePsbt(contractId);
-      // TODO: verifyReleaseArkTx before signing.
+
+      // Verify the release pays the agreed buyer + fee before signing.
+      const arkTx = Transaction.fromPSBT(base64.decode(psbts.arkTxPsbtB64));
+      const checkpoints = psbts.checkpointPsbtsB64.map((c) =>
+        Transaction.fromPSBT(base64.decode(c)),
+      );
+      verifyReleaseArkTx(
+        { arkTx, checkpoints },
+        {
+          escrowOutpoint: psbts.expected.escrowOutpoint,
+          buyerArkAddress: psbts.expected.buyerArkAddress,
+          buyerAmountSats: BigInt(psbts.expected.buyerAmountSats),
+          feeArkAddress: psbts.expected.feeArkAddress,
+          feeAmountSats: BigInt(psbts.expected.feeAmountSats),
+        },
+      );
+
       const { secretKey } = deriveOfferKey(wallet.seed, offerId);
       const sellerSignedArkTx = signEscrowArkTx(
         psbts.arkTxPsbtB64,
@@ -112,8 +133,8 @@ export function SignRelease({
           </>
         ) : null}
 
-        <dt>peach pubkey</dt>
-        <dd className="mono">{escrow.peachServerPubKey}</dd>
+        <dt>arbiter pubkey</dt>
+        <dd className="mono">{escrow.arbiterPubKey}</dd>
 
         <dt>asp pubkey</dt>
         <dd className="mono">{escrow.aspPubKey}</dd>

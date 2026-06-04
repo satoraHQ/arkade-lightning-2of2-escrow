@@ -9,12 +9,12 @@ import {
   Transaction,
   combineTapscriptSigs,
 } from '@arkade-os/sdk';
-import {
-  payoutCommitmentMessage,
-  type ContractStatus,
-  type TakeOfferResponse,
-  type ReleasePsbtResponse,
-  type SubmitSellerSigResponse,
+import { payoutCommitmentMessage } from '@satora/escrow';
+import type {
+  ContractStatus,
+  TakeOfferResponse,
+  ReleasePsbtResponse,
+  SubmitSellerSigResponse,
 } from '@arkade-peach-escrow-poc/shared';
 import type { Store, Contract, Offer } from '../store.js';
 import type { ArkContext } from '../ark.js';
@@ -210,6 +210,16 @@ export function contractRouter(deps: ContractDeps): Router {
         checkpointPsbtsB64: built.checkpoints.map((c) =>
           base64.encode(c.toPSBT()),
         ),
+        expected: {
+          escrowOutpoint: {
+            txid: offer.fundingTxid,
+            vout: offer.fundingVout,
+          },
+          buyerArkAddress: contract.buyerPayoutArkAddress,
+          buyerAmountSats: contract.buyerAmountSats,
+          feeArkAddress: peachFeeArkAddress,
+          feeAmountSats: offer.sellAmountSats - contract.buyerAmountSats,
+        },
       };
       res.json(response);
     },
