@@ -1,30 +1,38 @@
 import { useEffect, useState } from 'react';
 import { SingleKey, Wallet } from '@arkade-os/sdk';
+import {
+  classifyDestination,
+  type WithdrawResult,
+} from '@satora/escrow-client';
 import type { ContractStatus } from '@arkade-peach-escrow-poc/shared';
 import { deriveTakeKey, type Wallet as PoCWallet } from '../wallet.js';
 import { getEscrowClient } from '../escrow.js';
 import { ExplorerTx, L1ExplorerTx } from '../explorer.js';
 import { CopyButton, middleEllipsis } from '../ui.js';
 
-type Mode = 'onchain' | 'lightning';
+const KIND_LABEL = {
+  lightning: 'Lightning',
+  arkade: 'Arkade',
+  l1: 'onchain (L1)',
+} as const;
 
 /**
- * Once the release ark-tx is broadcast, the buyer's payout VTXO is
- * spendable. This screen withdraws it via `@satora/escrow-client`:
+ * Once the release ark-tx is broadcast, the buyer's payout VTXO is spendable.
+ * This screen withdraws the full payout via the escrow-client's smart
+ * `withdraw`, which auto-routes by the destination string:
  *
- *   - onchain   → `withdrawToL1`: collaborative Arkade offboard (settlement
- *     round) to an L1 bech32 address.
- *   - lightning → `withdrawToLightning`: an Arkade→Lightning swap whose VHTLC
- *     is funded from the payout, paying a BOLT11 invoice / LNURL / address.
+ *   - BOLT11 / LNURL / user@host → Arkade→Lightning swap
+ *   - ark1… / tark1…             → offchain Ark transfer
+ *   - bc1… / tb1… / 1…           → L1 collaborative offboard
  *
  * For the PoC we instantiate an @arkade-os/sdk Wallet on the fly with the
- * buyer's per-take key as its SingleKey identity (in-memory storage; the
- * seed in localStorage rebuilds everything on next load) and hand it to the
- * escrow-client, which owns the offboard / swap mechanics.
+ * buyer's per-take key (in-memory storage; the seed in localStorage rebuilds
+ * everything on next load) and hand it to the escrow-client.
  *
- * The lightning withdrawal sends the full available payout: the recipient
- * amount (payout minus the swap fee) comes from the SDK quote, so there is no
- * amount field. A BOLT11 invoice carries its own amount and ignores the quote.
+ * The amount is always the full payout: for Arkade we send the balance, for
+ * Lightning the recipient amount comes from the SDK quote (payout minus the
+ * swap fee; a BOLT11 invoice uses its own amount), and for L1 we offboard
+ * everything. So there is no amount field.
  */
 export function Withdraw({
   wallet: pocWallet,
@@ -41,19 +49,10 @@ export function Withdraw({
   exitTimelock: { value: number; type: 'blocks' | 'seconds' };
   status: ContractStatus;
 }) {
-  const [mode, setMode] = useState<Mode>('onchain');
   const [destination, setDestination] = useState('');
-  // A BOLT11 invoice, LNURL, or Lightning address. The swap backend resolves
-  // LNURL / address, so we just pass the raw string through.
-  const [lnDest, setLnDest] = useState('');
-  const [lnQuote, setLnQuote] = useState<{ recipientSats: number } | null>(null);
   const [working, setWorking] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
-  const [l1Txid, setL1Txid] = useState<string | null>(null);
-  const [lnResult, setLnResult] = useState<{
-    fundingTxid: string;
-    sourceAmountSats: number;
-  } | null>(null);
+  const [result, setResult] = useState<WithdrawResult | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [balance, setBalance] = useState<{ available: bigint } | null>(null);
 
@@ -75,65 +74,38 @@ export function Withdraw({
     };
   }, [pocWallet, offerId, arkServerUrl, exitTimelock.value, exitTimelock.type]);
 
-  // Quote the recipient amount for a full-payout Lightning withdrawal (payout
-  // minus the swap fee) for display + to hand the swap. The SDK owns the fee
-  // math, so the user never types an amount.
-  useEffect(() => {
-    if (mode !== 'lightning' || !balance) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const escrowClient = await getEscrowClient(lendaswapApiUrl, arkServerUrl);
-        const { recipientSats } = await escrowClient.quoteLightningWithdrawal(
-          Number(balance.available),
-        );
-        if (!cancelled) setLnQuote({ recipientSats });
-      } catch (e) {
-        console.error('[withdraw] lightning quote failed:', e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, balance, lendaswapApiUrl, arkServerUrl]);
+  const trimmed = destination.trim();
+  const kind = trimmed ? classifyDestination(trimmed) : null;
 
   async function withdraw() {
     setWorking(true);
     setErr(null);
-    setL1Txid(null);
-    setLnResult(null);
+    setResult(null);
     setProgress('opening wallet…');
     try {
       const sdk = await openWallet(pocWallet, offerId, arkServerUrl, exitTimelock);
       const escrowClient = await getEscrowClient(lendaswapApiUrl, arkServerUrl);
+      const availableSats = Number((await sdk.getBalance()).available ?? 0);
 
-      if (mode === 'onchain') {
-        setProgress('joining settlement round (this can take a minute)…');
-        const txid = await escrowClient.withdrawToL1({
-          wallet: sdk,
-          destinationAddress: destination,
-        });
-        setL1Txid(txid);
-      } else {
-        // Recipient amount = full available payout minus the swap fee, from the
-        // SDK quote. Ignored by the SDK for a BOLT11 invoice (it has its own).
+      // Resolve the amount for a full-payout withdrawal. L1 offboards everything
+      // (amount omitted); Arkade sends the whole balance; Lightning sends the
+      // quoted recipient amount (ignored by the SDK for a BOLT11 invoice).
+      let amountSats: number | undefined;
+      if (kind === 'arkade') {
+        amountSats = availableSats;
+      } else if (kind === 'lightning') {
         setProgress('quoting…');
-        const { recipientSats } =
-          lnQuote ??
-          (await escrowClient.quoteLightningWithdrawal(
-            Number((await sdk.getBalance()).available ?? 0),
-          ));
-        setProgress('creating Arkade→Lightning swap & funding VHTLC…');
-        const res = await escrowClient.withdrawToLightning({
-          wallet: sdk,
-          destination: lnDest,
-          amountSats: recipientSats,
-        });
-        setLnResult({
-          fundingTxid: res.fundingTxid,
-          sourceAmountSats: res.sourceAmountSats,
-        });
+        amountSats = (await escrowClient.quoteLightningWithdrawal(availableSats))
+          .recipientSats;
       }
+
+      setProgress(`withdrawing to ${kind ? KIND_LABEL[kind] : 'destination'}…`);
+      const res = await escrowClient.withdraw({
+        wallet: sdk,
+        destination: trimmed,
+        amountSats,
+      });
+      setResult(res);
       setProgress(null);
     } catch (e) {
       setErr(String(e));
@@ -142,9 +114,6 @@ export function Withdraw({
       setWorking(false);
     }
   }
-
-  const canSubmit =
-    mode === 'onchain' ? Boolean(destination) : Boolean(lnDest);
 
   return (
     <div className="card">
@@ -180,107 +149,57 @@ export function Withdraw({
         </div>
       </div>
 
-      <div className="row">
-        <label>method</label>
-        <div>
-          <label>
-            <input
-              type="radio"
-              name="withdraw-mode"
-              checked={mode === 'onchain'}
-              onChange={() => setMode('onchain')}
-            />{' '}
-            onchain (L1)
-          </label>{' '}
-          <label>
-            <input
-              type="radio"
-              name="withdraw-mode"
-              checked={mode === 'lightning'}
-              onChange={() => setMode('lightning')}
-            />{' '}
-            lightning
-          </label>
+      <div className="field">
+        <div className="field-label">
+          destination
+          {kind ? <span className="badge"> → {KIND_LABEL[kind]}</span> : null}
         </div>
+        <input
+          value={destination}
+          placeholder="lnbc… · lnurl1… · user@host · ark1… · bc1…"
+          onChange={(e) => setDestination(e.target.value)}
+        />
       </div>
-
-      {mode === 'onchain' ? (
-        <div className="row">
-          <label>L1 destination (bech32)</label>
-          <input
-            value={destination}
-            placeholder="tb1q…"
-            onChange={(e) => setDestination(e.target.value)}
-          />
-        </div>
-      ) : (
-        <>
-          <div className="row">
-            <label>invoice / LNURL / address</label>
-            <input
-              value={lnDest}
-              placeholder="lnbc… · lnurl1… · user@host"
-              onChange={(e) => setLnDest(e.target.value)}
-            />
-          </div>
-          <p className="muted">
-            Withdraws your full payout.{' '}
-            {lnQuote
-              ? `For an LNURL / address the recipient gets ≈ ${lnQuote.recipientSats} sats after the swap fee; a BOLT11 invoice uses its own amount.`
-              : 'The recipient amount (payout minus the swap fee) is set by the SDK; a BOLT11 invoice uses its own amount.'}
-          </p>
-        </>
-      )}
+      <p className="muted">
+        Withdraws your full payout to whatever you paste — Lightning
+        (invoice/LNURL/address), an Arkade address, or an onchain address. The
+        amount is set automatically (a BOLT11 invoice uses its own).
+      </p>
 
       <div className="row">
         <button
           className="primary"
           onClick={withdraw}
-          disabled={working || !canSubmit}
+          disabled={working || !trimmed}
         >
           {working
             ? 'withdrawing…'
-            : `withdraw to ${mode === 'onchain' ? 'L1' : 'Lightning'}`}
+            : `withdraw${kind ? ` to ${KIND_LABEL[kind]}` : ''}`}
         </button>
       </div>
 
       {progress ? <p className="muted">{progress}</p> : null}
 
-      {l1Txid ? (
+      {result ? (
         <>
           <div className="status-row">
-            <span className="badge badge-ok">withdrawn to L1</span>
+            <span className="badge badge-ok">{resultBadge(result)}</span>
           </div>
           <div className="field">
-            <div className="field-label">settlement txid (L1)</div>
+            <div className="field-label">{resultTxLabel(result)}</div>
             <div className="field-row">
               <span className="field-value">
-                <L1ExplorerTx txid={l1Txid}>
-                  {middleEllipsis(l1Txid, 14, 12)}
-                </L1ExplorerTx>
+                {result.method === 'l1' ? (
+                  <L1ExplorerTx txid={result.txid}>
+                    {middleEllipsis(result.txid, 14, 12)}
+                  </L1ExplorerTx>
+                ) : (
+                  <ExplorerTx txid={result.txid}>
+                    {middleEllipsis(result.txid, 14, 12)}
+                  </ExplorerTx>
+                )}
               </span>
-              <CopyButton value={l1Txid} />
-            </div>
-          </div>
-        </>
-      ) : null}
-
-      {lnResult ? (
-        <>
-          <div className="status-row">
-            <span className="badge badge-ok">
-              paid via Lightning · {lnResult.sourceAmountSats} sats
-            </span>
-          </div>
-          <div className="field">
-            <div className="field-label">VHTLC funding (ark-tx)</div>
-            <div className="field-row">
-              <span className="field-value">
-                <ExplorerTx txid={lnResult.fundingTxid}>
-                  {middleEllipsis(lnResult.fundingTxid, 14, 12)}
-                </ExplorerTx>
-              </span>
-              <CopyButton value={lnResult.fundingTxid} />
+              <CopyButton value={result.txid} />
             </div>
           </div>
         </>
@@ -289,6 +208,28 @@ export function Withdraw({
       {err ? <p className="error">{err}</p> : null}
     </div>
   );
+}
+
+function resultBadge(result: WithdrawResult): string {
+  switch (result.method) {
+    case 'lightning':
+      return `paid via Lightning · ${result.sourceAmountSats} sats`;
+    case 'arkade':
+      return 'sent on Arkade';
+    case 'l1':
+      return 'withdrawn to L1';
+  }
+}
+
+function resultTxLabel(result: WithdrawResult): string {
+  switch (result.method) {
+    case 'lightning':
+      return 'VHTLC funding (ark-tx)';
+    case 'arkade':
+      return 'ark-tx';
+    case 'l1':
+      return 'settlement txid (L1)';
+  }
 }
 
 /**
