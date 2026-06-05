@@ -47,8 +47,14 @@ async function main() {
       // x-only (32 bytes), already sign-byte-stripped from ark.info.signerPubkey
       aspPubKey: ark.aspPubKeyHex,
       network: ark.info.network,
+      // Ark address human-readable prefix for this network (e.g. `ark` on
+      // mainnet, `tark` on mutinynet/signet/testnet). Buyers build their
+      // payout address with it, so it must match the ASP's network.
+      hrp: ark.network.hrp,
       arkServerUrl: config.arkServerUrl,
       lendaswapApiUrl: config.lendaswapApiUrl,
+      arkExplorerUrl: config.arkExplorerUrl,
+      l1ExplorerUrl: config.l1ExplorerUrl,
       peachFeeArkAddress,
       // ASP's unilateral-exit timelock — same value the SDK Wallet uses
       // internally. Buyers need it so their payout DefaultVtxo address

@@ -5,6 +5,7 @@ import { SetupWallet } from './screens/SetupWallet.js';
 import { CreateOffer } from './screens/CreateOffer.js';
 import { FundOffer } from './screens/FundOffer.js';
 import { SignRelease } from './screens/SignRelease.js';
+import { configureExplorers } from './explorer.js';
 import {
   EMPTY_SESSION,
   clearSession,
@@ -71,6 +72,7 @@ export function App() {
       .then((h) => {
         setLendaswapApiUrl(h.lendaswapApiUrl);
         setArkServerUrl(h.arkServerUrl);
+        configureExplorers({ ark: h.arkExplorerUrl });
       })
       .catch((e) => console.error('[seller] healthz failed:', e));
   }, []);

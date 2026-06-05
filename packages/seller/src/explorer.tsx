@@ -1,13 +1,19 @@
 import type { ReactNode } from 'react';
 
-const EXPLORER_BASE = 'https://explorer.mutinynet.arkade.sh';
+// Ark explorer base defaults to mutinynet; `configureExplorers()` overrides it
+// at app boot from the server's /healthz, so links follow the configured network.
+let arkExplorerBase = 'https://explorer.mutinynet.arkade.sh';
+
+export function configureExplorers(urls: { ark?: string }): void {
+  if (urls.ark) arkExplorerBase = urls.ark;
+}
 
 export function txLink(txid: string): string {
-  return `${EXPLORER_BASE}/tx/${txid}`;
+  return `${arkExplorerBase}/tx/${txid}`;
 }
 
 export function addressLink(address: string): string {
-  return `${EXPLORER_BASE}/address/${address}`;
+  return `${arkExplorerBase}/address/${address}`;
 }
 
 export function ExplorerTx({

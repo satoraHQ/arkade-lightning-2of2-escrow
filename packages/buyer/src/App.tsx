@@ -10,6 +10,7 @@ import { BrowseOffers } from './screens/BrowseOffers.js';
 import { TakeOffer } from './screens/TakeOffer.js';
 import { AwaitRelease } from './screens/AwaitRelease.js';
 import { Withdraw } from './screens/Withdraw.js';
+import { configureExplorers } from './explorer.js';
 
 type Step = 'wallet' | 'browse' | 'take' | 'await' | 'withdraw';
 
@@ -24,6 +25,7 @@ export function App() {
   const [aspPubKey, setAspPubKey] = useState<string | null>(null);
   const [arkServerUrl, setArkServerUrl] = useState<string | null>(null);
   const [lendaswapApiUrl, setLendaswapApiUrl] = useState<string | null>(null);
+  const [hrp, setHrp] = useState<string | null>(null);
   const [exitTimelock, setExitTimelock] = useState<{
     value: number;
     type: 'blocks' | 'seconds';
@@ -36,7 +38,9 @@ export function App() {
         setAspPubKey(h.aspPubKey);
         setArkServerUrl(h.arkServerUrl);
         setLendaswapApiUrl(h.lendaswapApiUrl);
+        setHrp(h.hrp);
         setExitTimelock(h.exitTimelock);
+        configureExplorers({ ark: h.arkExplorerUrl, l1: h.l1ExplorerUrl });
       })
       .catch((e) => console.error('[buyer] healthz failed:', e));
   }, []);
@@ -70,12 +74,13 @@ export function App() {
         />
       ) : null}
 
-      {step === 'take' && offer && aspPubKey && exitTimelock ? (
+      {step === 'take' && offer && aspPubKey && hrp && exitTimelock ? (
         <TakeOffer
           wallet={wallet}
           offer={offer}
           feeBps={FEE_BPS}
           aspPubKeyHex={aspPubKey}
+          hrp={hrp}
           exitTimelock={exitTimelock}
           onTaken={(id) => {
             setContractId(id);
@@ -84,10 +89,10 @@ export function App() {
         />
       ) : null}
 
-      {step === 'take' && (!offer || !aspPubKey || !exitTimelock) ? (
+      {step === 'take' && (!offer || !aspPubKey || !hrp || !exitTimelock) ? (
         <div className="card">
           <p className="muted">
-            Loading ASP pubkey + exit timelock from {`{server}`}/healthz...
+            Loading ASP config from {`{server}`}/healthz...
           </p>
         </div>
       ) : null}
