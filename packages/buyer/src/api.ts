@@ -37,8 +37,11 @@ export const api = {
       peachPubKey: string;
       aspPubKey: string;
       network: string;
+      hrp: string;
       arkServerUrl: string;
       lendaswapApiUrl: string;
+      arkExplorerUrl: string;
+      l1ExplorerUrl: string;
       peachFeeArkAddress: string;
       exitTimelock: { value: number; type: 'blocks' | 'seconds' };
     }>('/healthz'),

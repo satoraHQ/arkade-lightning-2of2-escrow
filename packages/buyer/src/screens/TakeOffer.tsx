@@ -7,16 +7,12 @@ import { api } from '../api.js';
 import { buildPayoutArkAddress, deriveTakeKey, type Wallet } from '../wallet.js';
 import { ExplorerAddress } from '../explorer.js';
 
-// mutinynet, signet and testnet all share the `tark` HRP. We only run
-// against mutinynet in this PoC, so it's a constant rather than user
-// input.
-const HRP = 'tark';
-
 export function TakeOffer({
   wallet,
   offer,
   feeBps,
   aspPubKeyHex,
+  hrp,
   exitTimelock,
   onTaken,
 }: {
@@ -24,6 +20,9 @@ export function TakeOffer({
   offer: OfferSummary;
   feeBps: number;
   aspPubKeyHex: string;
+  // Ark address HRP for the configured network (`ark` mainnet, `tark` otherwise),
+  // from the server's /healthz.
+  hrp: string;
   exitTimelock: { value: number; type: 'blocks' | 'seconds' };
   onTaken: (contractId: string) => void;
 }) {
@@ -40,11 +39,11 @@ export function TakeOffer({
 
   const payoutAddress = useMemo(
     () =>
-      buildPayoutArkAddress(buyerKey.publicKey, hex.decode(aspPubKeyHex), HRP, {
+      buildPayoutArkAddress(buyerKey.publicKey, hex.decode(aspPubKeyHex), hrp, {
         value: BigInt(exitTimelock.value),
         type: exitTimelock.type,
       }),
-    [buyerKey.publicKey, aspPubKeyHex, exitTimelock.value, exitTimelock.type],
+    [buyerKey.publicKey, aspPubKeyHex, hrp, exitTimelock.value, exitTimelock.type],
   );
 
   useEffect(() => {

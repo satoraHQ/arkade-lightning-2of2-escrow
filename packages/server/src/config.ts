@@ -18,6 +18,10 @@ const Schema = z.object({
   PEACH_SECRET_KEY_PATH: z.string().default('./peach-server.key'),
   FEE_BPS: z.coerce.number().int().nonnegative().default(10),
   PEACH_FEE_ARK_ADDRESS: z.string().optional(),
+  // Block explorers the frontends link to (served via /healthz). Defaults are
+  // mutinynet; set the mainnet equivalents when NETWORK=bitcoin.
+  ARK_EXPLORER_URL: z.string().url().default('https://explorer.mutinynet.arkade.sh'),
+  L1_EXPLORER_URL: z.string().url().default('https://mutinynet.com'),
 });
 
 const parsed = Schema.parse(process.env);
@@ -30,6 +34,8 @@ export const config = {
   peachSecretKeyPath: parsed.PEACH_SECRET_KEY_PATH,
   feeBps: parsed.FEE_BPS,
   peachFeeArkAddress: parsed.PEACH_FEE_ARK_ADDRESS,
+  arkExplorerUrl: parsed.ARK_EXPLORER_URL,
+  l1ExplorerUrl: parsed.L1_EXPLORER_URL,
 } as const;
 
 export type Config = typeof config;
