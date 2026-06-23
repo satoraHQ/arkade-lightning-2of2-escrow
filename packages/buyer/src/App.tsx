@@ -24,7 +24,7 @@ export function App() {
   const [contract, setContract] = useState<ContractStatus | null>(null);
   const [aspPubKey, setAspPubKey] = useState<string | null>(null);
   const [arkServerUrl, setArkServerUrl] = useState<string | null>(null);
-  const [lendaswapApiUrl, setLendaswapApiUrl] = useState<string | null>(null);
+  const [satoraApiUrl, setSatoraApiUrl] = useState<string | null>(null);
   const [hrp, setHrp] = useState<string | null>(null);
   const [exitTimelock, setExitTimelock] = useState<{
     value: number;
@@ -37,7 +37,7 @@ export function App() {
       .then((h) => {
         setAspPubKey(h.aspPubKey);
         setArkServerUrl(h.arkServerUrl);
-        setLendaswapApiUrl(h.lendaswapApiUrl);
+        setSatoraApiUrl(h.satoraApiUrl);
         setHrp(h.hrp);
         setExitTimelock(h.exitTimelock);
         configureExplorers({ ark: h.arkExplorerUrl, l1: h.l1ExplorerUrl });
@@ -110,13 +110,13 @@ export function App() {
       {step === 'withdraw' &&
       contract &&
       arkServerUrl &&
-      lendaswapApiUrl &&
+      satoraApiUrl &&
       exitTimelock ? (
         <Withdraw
           wallet={wallet}
           offerId={contract.offerId}
           arkServerUrl={arkServerUrl}
-          lendaswapApiUrl={lendaswapApiUrl}
+          satoraApiUrl={satoraApiUrl}
           exitTimelock={exitTimelock}
           status={contract}
         />

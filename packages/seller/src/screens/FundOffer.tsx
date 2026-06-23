@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import type { FundFromLightningHandle } from '@satora/escrow-client';
 import type { SwapStatus } from '@satora/swap';
 import { api } from '../api.js';
-import { claimSwapToArk, subscribeToSwap } from '../lendaswap.js';
+import { claimSwapToArk, subscribeToSwap } from '../satora.js';
 import { buildEscrowOptions, getEscrowClient } from '../escrow.js';
 import { deriveOfferKey, type Wallet } from '../wallet.js';
 import { CopyButton, CopyField, middleEllipsis } from '../ui.js';
@@ -18,7 +18,7 @@ import type {
  *
  * Flow:
  * 1. Click "generate invoice" → reconstruct + verify the escrow script,
- *    then `fundFromLightning` creates a Lendaswap swap targeting the escrow
+ *    then `fundFromLightning` creates a Satora swap targeting the escrow
  *    address and starts watching it. We get back a BOLT11 + a handle.
  * 2. Display the invoice. Seller pays it from any LN wallet.
  * 3. On `serverfunded`, `handle.awaitFunded()` claims the Arkade VHTLC into
@@ -32,7 +32,7 @@ export function FundOffer({
   offerId,
   escrow,
   amountSats,
-  lendaswapApiUrl,
+  satoraApiUrl,
   arkServerUrl,
   swapId: initialSwapId,
   invoice: initialInvoice,
@@ -43,7 +43,7 @@ export function FundOffer({
   offerId: string;
   escrow: RegisterEscrowResponse;
   amountSats: number;
-  lendaswapApiUrl: string | null;
+  satoraApiUrl: string | null;
   arkServerUrl: string | null;
   swapId: string | null;
   invoice: string | null;
@@ -87,11 +87,11 @@ export function FundOffer({
     };
   }, [offerId, onFunded]);
 
-  // Lendaswap swap status via websocket subscription. SDK reuses one
+  // Satora swap status via websocket subscription. SDK reuses one
   // socket across all subscribers; unsubscribing drops our handler and
   // the socket closes once nobody is listening.
   useEffect(() => {
-    if (!swapId || !lendaswapApiUrl || claimed) return;
+    if (!swapId || !satoraApiUrl || claimed) return;
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
 
@@ -110,7 +110,7 @@ export function FundOffer({
             // Resume path: page was refreshed after the swap was created, so
             // we no longer hold the handle. Claim directly via the swap client.
             await claimSwapToArk(
-              lendaswapApiUrl,
+              satoraApiUrl,
               swapId,
               escrow.escrowVtxoArkAddress,
             );
@@ -126,7 +126,7 @@ export function FundOffer({
 
     void (async () => {
       try {
-        unsubscribe = await subscribeToSwap(lendaswapApiUrl, swapId, handle);
+        unsubscribe = await subscribeToSwap(satoraApiUrl, swapId, handle);
       } catch (e) {
         if (!cancelled) console.error('[fund] swap subscribe failed:', e);
       }
@@ -138,14 +138,14 @@ export function FundOffer({
     };
   }, [
     swapId,
-    lendaswapApiUrl,
+    satoraApiUrl,
     escrow.escrowVtxoArkAddress,
     claiming,
     claimed,
   ]);
 
   async function generate() {
-    if (!lendaswapApiUrl || !arkServerUrl) {
+    if (!satoraApiUrl || !arkServerUrl) {
       setErr('config not loaded yet');
       return;
     }
@@ -153,7 +153,7 @@ export function FundOffer({
     setErr(null);
     try {
       const { client, network } = await getEscrowClient(
-        lendaswapApiUrl,
+        satoraApiUrl,
         arkServerUrl,
       );
       const { publicKey: sellerPubKey } = deriveOfferKey(wallet.seed, offerId);
@@ -179,11 +179,11 @@ export function FundOffer({
   const autoTriedRef = useRef(false);
   useEffect(() => {
     if (autoTriedRef.current) return;
-    if (invoice || !lendaswapApiUrl || !arkServerUrl) return;
+    if (invoice || !satoraApiUrl || !arkServerUrl) return;
     autoTriedRef.current = true;
     void generate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lendaswapApiUrl, arkServerUrl, invoice]);
+  }, [satoraApiUrl, arkServerUrl, invoice]);
 
   const swapDone = swapStatus === 'serverfunded' || claiming || claimed;
   const swapLabel = claimed
@@ -217,7 +217,7 @@ export function FundOffer({
         <button
           className="primary"
           onClick={generate}
-          disabled={generating || !lendaswapApiUrl || !arkServerUrl}
+          disabled={generating || !satoraApiUrl || !arkServerUrl}
         >
           {generating ? 'creating swap…' : 'generate Lightning invoice'}
         </button>

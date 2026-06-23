@@ -38,14 +38,14 @@ export function Withdraw({
   wallet: pocWallet,
   offerId,
   arkServerUrl,
-  lendaswapApiUrl,
+  satoraApiUrl,
   exitTimelock,
   status,
 }: {
   wallet: PoCWallet;
   offerId: string;
   arkServerUrl: string;
-  lendaswapApiUrl: string;
+  satoraApiUrl: string;
   exitTimelock: { value: number; type: 'blocks' | 'seconds' };
   status: ContractStatus;
 }) {
@@ -84,7 +84,7 @@ export function Withdraw({
     setProgress('opening wallet…');
     try {
       const sdk = await openWallet(pocWallet, offerId, arkServerUrl, exitTimelock);
-      const escrowClient = await getEscrowClient(lendaswapApiUrl, arkServerUrl);
+      const escrowClient = await getEscrowClient(satoraApiUrl, arkServerUrl);
       const availableSats = Number((await sdk.getBalance()).available ?? 0);
 
       // Resolve the amount for a full-payout withdrawal. L1 offboards everything

@@ -6,7 +6,7 @@ import {
 } from '@satora/swap';
 
 /**
- * One Lendaswap Client per (baseUrl) for the lifetime of the page. The
+ * One Satora Client per (baseUrl) for the lifetime of the page. The
  * SDK keeps its mnemonic in IndexedDB (IdbWalletStorage) so refreshes
  * reuse the same depositor key tree and pending swaps stay claimable.
  *
@@ -17,7 +17,7 @@ import {
  */
 const cache = new Map<string, Promise<Client>>();
 
-export function getLendaswapClient(baseUrl: string): Promise<Client> {
+export function getSatoraClient(baseUrl: string): Promise<Client> {
   let cached = cache.get(baseUrl);
   if (!cached) {
     cached = Client.builder()
@@ -36,7 +36,7 @@ export function getLendaswapClient(baseUrl: string): Promise<Client> {
  * subscribers; calling unsubscribe drops just our handler and the
  * socket closes once no subscribers remain.
  *
- * The Lendaswap server pushes the current status on connect, so the
+ * The Satora server pushes the current status on connect, so the
  * handler fires once immediately after subscribe — no separate seed
  * fetch is needed even after a mid-swap page refresh.
  */
@@ -45,12 +45,12 @@ export async function subscribeToSwap(
   swapId: string,
   onUpdate: (status: SwapStatus) => void,
 ): Promise<() => void> {
-  const client = await getLendaswapClient(baseUrl);
+  const client = await getSatoraClient(baseUrl);
   return client.subscribeToSwaps([swapId], (_id, status) => onUpdate(status));
 }
 
 /**
- * After the Lendaswap server has funded its side (status `serverfunded`),
+ * After the Satora server has funded its side (status `serverfunded`),
  * the seller signs the user-side claim ark-tx that pays the escrow
  * address.
  */
@@ -59,6 +59,6 @@ export async function claimSwapToArk(
   swapId: string,
   destinationAddress: string,
 ) {
-  const client = await getLendaswapClient(baseUrl);
+  const client = await getSatoraClient(baseUrl);
   return client.claimArkade(swapId, { destinationAddress });
 }

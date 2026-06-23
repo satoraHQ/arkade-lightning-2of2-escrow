@@ -33,7 +33,7 @@ export const api = {
       network: string;
       hrp: string;
       arkServerUrl: string;
-      lendaswapApiUrl: string;
+      satoraApiUrl: string;
       arkExplorerUrl: string;
       l1ExplorerUrl: string;
       peachFeeArkAddress: string;

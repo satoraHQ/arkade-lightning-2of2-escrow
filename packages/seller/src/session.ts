@@ -14,7 +14,7 @@ export interface SellerSession {
   funding: FundingStatus | null;
   /** Set after the cooperative release ark-tx finalises. */
   arkTxid: string | null;
-  /** Active Lendaswap LN→Arkade swap id, kept across page refreshes. */
+  /** Active Satora LN→Arkade swap id, kept across page refreshes. */
   lnSwapId: string | null;
   /** BOLT11 invoice for the active swap, so the seller can re-display it. */
   lnInvoice: string | null;
