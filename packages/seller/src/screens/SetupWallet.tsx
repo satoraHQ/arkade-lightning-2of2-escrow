@@ -15,18 +15,18 @@ export function SetupWallet({
     <div className="card">
       <h2>Wallet</h2>
       <p className="muted">
-        A 32-byte random seed is stored unencrypted in localStorage.
-        Per-offer Schnorr keys are derived from it via HKDF. No backup —
-        clearing browser data orphans every active escrow.
+        A 32-byte random seed, stored unencrypted in a local file (and
+        mirrored to localStorage) so it survives clearing browser data.
+        Per-offer Schnorr keys are derived from it via HKDF.
       </p>
       <div className="row">
         <button onClick={() => setRevealed(!revealed)}>
           {revealed ? 'hide' : 'reveal'} seed
         </button>
         <button
-          onClick={() => {
+          onClick={async () => {
             if (confirm('Clear the wallet? Any active escrows will become unrecoverable.')) {
-              clearWallet();
+              await clearWallet();
               onClearSession();
               location.reload();
             }

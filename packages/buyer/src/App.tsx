@@ -3,7 +3,7 @@ import type {
   ContractStatus,
   OfferSummary,
 } from '@arkade-peach-escrow-poc/shared';
-import { loadOrCreateWallet } from './wallet.js';
+import { loadOrCreateWallet, type Wallet } from './wallet.js';
 import { api } from './api.js';
 import { SetupWallet } from './screens/SetupWallet.js';
 import { BrowseOffers } from './screens/BrowseOffers.js';
@@ -15,7 +15,12 @@ import { configureExplorers } from './explorer.js';
 type Step = 'wallet' | 'browse' | 'take' | 'await' | 'withdraw';
 
 export function App() {
-  const [wallet] = useState(() => loadOrCreateWallet());
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  useEffect(() => {
+    loadOrCreateWallet()
+      .then(setWallet)
+      .catch((e) => console.error('[buyer] wallet load failed:', e));
+  }, []);
   const [step, setStep] = useState<Step>('wallet');
   const [offer, setOffer] = useState<OfferSummary | null>(null);
   const [contractId, setContractId] = useState<string | null>(null);
@@ -47,12 +52,21 @@ export function App() {
       .catch((e) => console.error('[buyer] healthz failed:', e));
   }, []);
 
+  if (!wallet) {
+    return (
+      <div className="app">
+        <h1>Peach Escrow PoC — Buyer</h1>
+        <p className="muted">loading wallet…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <h1>Peach Escrow PoC — Buyer</h1>
       <div className="banner-warn">
         PoC ONLY. {networkLabel(network)}. Keys live unencrypted in
-        localStorage. Do not use with real funds.
+        localStorage.
       </div>
 
       <ol className="steps">
