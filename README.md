@@ -226,17 +226,23 @@ packages/
 
 ## Configuration
 
-Server `.env`:
+Top-level `.env` (copy from `.env.example`; `just server` does this on first
+run). The server reads it and the frontends read network config from the
+server's `/healthz`, so this is the single place to switch networks:
 
 ```
 ARK_SERVER_URL=https://mutinynet.arkade.sh
 LENDASWAP_API_URL=https://mutinynetswap.lendasat.com
 NETWORK=mutinynet
-PORT=3000
+ARK_EXPLORER_URL=https://explorer.mutinynet.arkade.sh
+L1_EXPLORER_URL=https://mutinynet.com
+PORT=3210
 PEACH_SECRET_KEY_PATH=./peach-server.key
-DB_PATH=./peach-server.sqlite
 FEE_BPS=10
 ```
+
+For mainnet, set `NETWORK=bitcoin` and point `ARK_SERVER_URL` /
+`LENDASWAP_API_URL` / the explorer URLs at mainnet endpoints.
 
 Frontend env vars:
 
