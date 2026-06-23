@@ -55,6 +55,7 @@ export function startFundingPoller(store: Store, ark: ArkContext): () => void {
         offer.fundingTxid = first.txid;
         offer.fundingVout = first.vout;
         offer.fundedAmountSats = totalSats;
+        store.saveOffer(offer);
 
         console.log(
           `[poll] offer ${offer.id} funded with ${totalSats} sats across ${unspent.length} VTXO(s); canonical=${first.txid}:${first.vout}`,

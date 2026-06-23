@@ -31,8 +31,11 @@ async function main() {
       .encode();
   console.log(`[server] peach fee Ark address: ${peachFeeArkAddress}`);
 
-  const store = createStore();
-  console.log('[server] in-memory store (state lost on restart)');
+  const store = createStore(config.dbPath);
+  console.log(
+    `[server] sqlite store at ${config.dbPath} ` +
+      `(${store.offers.size} offers, ${store.contracts.size} contracts loaded)`,
+  );
 
   const app = express();
   // CORS: open in PoC. Frontends run on 5173 (seller) / 5174 (buyer);
