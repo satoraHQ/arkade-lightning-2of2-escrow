@@ -226,9 +226,16 @@ packages/
 
 ## Configuration
 
-Top-level `.env` (copy from `.env.example`; `just server` does this on first
-run). The server reads it and the frontends read network config from the
-server's `/healthz`, so this is the single place to switch networks:
+Top-level `.env`. The server reads it and the frontends read network config
+from the server's `/healthz`, so this is the single place to switch networks.
+Two committed samples to copy from:
+
+```bash
+cp .env.mutinynet.example .env   # PoC default (signet testnet); `just server` does this for you
+cp .env.mainnet.example .env     # mainnet (NETWORK=bitcoin); fill in the <...> endpoints
+```
+
+Mutinynet sample:
 
 ```
 ARK_SERVER_URL=https://mutinynet.arkade.sh
@@ -241,8 +248,8 @@ PEACH_SECRET_KEY_PATH=./peach-server.key
 FEE_BPS=10
 ```
 
-For mainnet, set `NETWORK=bitcoin` and point `ARK_SERVER_URL` /
-`LENDASWAP_API_URL` / the explorer URLs at mainnet endpoints.
+The mainnet sample is identical except `NETWORK=bitcoin` and the ASP / swap /
+explorer URLs, which you must point at real mainnet endpoints.
 
 Frontend env vars:
 
