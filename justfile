@@ -9,9 +9,27 @@ default:
 install:
     npm install
 
-# Run the Peach-style server (Express + sqlite, http://localhost:3210).
-server:
-    cp -n .env.mutinynet.example .env || true
+# On first run copies .env.<network>.example to .env. An existing .env is kept
+# (your edits are safe); a NETWORK mismatch only warns. To switch networks,
+# run `just reset-env` first.
+# Run the Peach-style server against a network (mutinynet | mainnet).
+server network="mutinynet":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{network}}" in mutinynet|mainnet) ;; *)
+      echo "error: network must be 'mutinynet' or 'mainnet' (got '{{network}}')" >&2; exit 1 ;;
+    esac
+    if [[ ! -f .env ]]; then
+      cp ".env.{{network}}.example" .env
+      echo "[just] created .env from .env.{{network}}.example"
+    else
+      want=$([[ "{{network}}" == mainnet ]] && echo bitcoin || echo mutinynet)
+      have=$(grep -E '^NETWORK=' .env | cut -d= -f2- || true)
+      if [[ "$have" != "$want" ]]; then
+        echo "[just] WARNING: existing .env has NETWORK=$have but you asked for {{network}} ($want)." >&2
+        echo "[just]          run 'just reset-env' to regenerate from .env.{{network}}.example." >&2
+      fi
+    fi
     npm run dev --workspace @arkade-peach-escrow-poc/server
 
 # Run the seller frontend (Vite, http://localhost:5173).
@@ -30,10 +48,13 @@ typecheck:
 build:
     npm run build
 
-# Wipe server local state (peach hot key — db is in-memory, restarts the
-# server to clear it).
+# Wipe server local state (peach hot key; db is in-memory, cleared on restart).
 reset-server:
     rm -f packages/server/peach-server.key
+
+# Delete the local .env so the next `just server <network>` regenerates it.
+reset-env:
+    rm -f .env
 
 # Probe the server's /healthz endpoint.
 healthz host="http://localhost:3210":
