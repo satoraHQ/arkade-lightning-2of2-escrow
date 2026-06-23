@@ -117,12 +117,12 @@ export interface ReleasePsbtResponse {
     buyerArkAddress: ArkAddress;
     buyerAmountSats: number;
     /**
-     * Fee output. Omitted when the fee rounds to 0 sats — the release then
-     * has a single buyer output (no fee output), because the ASP rejects a
-     * 0-sat output (`AMOUNT_TOO_LOW`).
+     * Fee output the seller should expect. `feeAmountSats` is 0 for a
+     * fee-free trade — the SDK then omits the fee output entirely (a 0-sat
+     * output is rejected by the ASP) and `verifyReleaseArkTx` expects none.
      */
-    feeArkAddress?: ArkAddress;
-    feeAmountSats?: number;
+    feeArkAddress: ArkAddress;
+    feeAmountSats: number;
   };
 }
 

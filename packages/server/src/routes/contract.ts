@@ -219,11 +219,8 @@ export function contractRouter(deps: ContractDeps): Router {
           },
           buyerArkAddress: contract.buyerPayoutArkAddress,
           buyerAmountSats: contract.buyerAmountSats,
-          // Fee output only exists when the fee is non-zero; otherwise the
-          // release is a single buyer output.
-          ...(feeSats > 0
-            ? { feeArkAddress: peachFeeArkAddress, feeAmountSats: feeSats }
-            : {}),
+          feeArkAddress: peachFeeArkAddress,
+          feeAmountSats: feeSats,
         },
       };
       res.json(response);
