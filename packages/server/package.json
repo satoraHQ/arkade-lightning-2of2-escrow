@@ -13,7 +13,7 @@
     "@arkade-os/sdk": "^0.4.32",
     "@arkade-peach-escrow-poc/shared": "*",
     "@noble/curves": "^2.2.0",
-    "@satora/escrow": "0.0.3",
+    "@satora/escrow": "0.0.4",
     "@scure/base": "^2.0.0",
     "@scure/btc-signer": "^2.0.0",
     "better-sqlite3": "^12.11.1",

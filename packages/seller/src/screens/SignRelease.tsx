@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArkAddress, P2A, Transaction } from '@arkade-os/sdk';
-import { base64, hex } from '@scure/base';
+import { Transaction } from '@arkade-os/sdk';
+import { base64 } from '@scure/base';
 import {
   signEscrowArkTx,
   signEscrowCheckpoints,
@@ -13,95 +13,6 @@ import type {
 import { api } from '../api.js';
 import { deriveOfferKey, type Wallet } from '../wallet.js';
 import { ExplorerAddress, ExplorerTx } from '../explorer.js';
-
-/**
- * Seller-side check for a no-fee cooperative release (single buyer output).
- * Mirrors the SDK's `verifyReleaseArkTx` but expects exactly one buyer output
- * plus the P2A anchor — no fee output. Throws on any mismatch; caller must NOT
- * sign if this throws.
- */
-function verifyBuyerOnlyRelease(
-  release: { arkTx: Transaction; checkpoints: Transaction[] },
-  expected: {
-    escrowOutpoint: { txid: string; vout: number };
-    buyerArkAddress: string;
-    buyerAmountSats: bigint;
-  },
-): void {
-  const { arkTx, checkpoints } = release;
-  if (checkpoints.length !== 1) {
-    throw new Error(`expected exactly 1 checkpoint, got ${checkpoints.length}`);
-  }
-  const checkpoint = checkpoints[0]!;
-  const cpIn = checkpoint.getInput(0);
-  if (!cpIn.txid || cpIn.index === undefined) {
-    throw new Error('checkpoint input 0 missing prevout');
-  }
-  if (
-    hex.encode(cpIn.txid) !== expected.escrowOutpoint.txid ||
-    cpIn.index !== expected.escrowOutpoint.vout
-  ) {
-    throw new Error('checkpoint does not spend the escrow funding outpoint');
-  }
-  if (arkTx.inputsLength !== 1) {
-    throw new Error(`expected exactly 1 ark-tx input, got ${arkTx.inputsLength}`);
-  }
-  const arkIn = arkTx.getInput(0);
-  if (!arkIn.txid || hex.encode(arkIn.txid) !== checkpoint.id) {
-    throw new Error('ark-tx does not spend the checkpoint');
-  }
-  const buyer = ArkAddress.decode(expected.buyerArkAddress);
-  const anchorScriptHex = hex.encode(P2A.script);
-  let buyerOutputs = 0;
-  let anchorOutputs = 0;
-  for (let i = 0; i < arkTx.outputsLength; i++) {
-    const output = arkTx.getOutput(i);
-    if (!output.script || output.amount === undefined) {
-      throw new Error(`ark-tx output ${i} missing script or amount`);
-    }
-    if (
-      matchesAddress(output.script, buyer) &&
-      output.amount === expected.buyerAmountSats
-    ) {
-      buyerOutputs++;
-    } else if (
-      hex.encode(output.script) === anchorScriptHex &&
-      output.amount === P2A.amount
-    ) {
-      anchorOutputs++;
-    } else {
-      throw new Error(
-        `unexpected ark-tx output ${i}: ${output.amount} sats to ${hex.encode(output.script)}`,
-      );
-    }
-  }
-  if (buyerOutputs !== 1) {
-    throw new Error(
-      `expected exactly 1 buyer output paying ${expected.buyerAmountSats} sats, got ${buyerOutputs}`,
-    );
-  }
-  if (anchorOutputs !== 1) {
-    throw new Error(`expected exactly 1 P2A anchor output, got ${anchorOutputs}`);
-  }
-}
-
-function matchesAddress(
-  script: Uint8Array,
-  address: { pkScript: Uint8Array; subdustPkScript: Uint8Array },
-): boolean {
-  return (
-    bytesEqual(script, address.pkScript) ||
-    bytesEqual(script, address.subdustPkScript)
-  );
-}
-
-function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
 
 /**
  * Poll the funding endpoint until a buyer has taken the offer
@@ -159,35 +70,23 @@ export function SignRelease({
     try {
       const psbts = await api.releasePsbt(contractId);
 
-      // Verify the release pays the agreed outputs before signing. The SDK's
-      // verifyReleaseArkTx requires a fee output, so the no-fee release (fee
-      // rounded to 0) uses a local single-output check.
+      // Verify the release pays the agreed buyer + fee before signing. A
+      // 0-sat fee is fine: the SDK omits the fee output and verifyReleaseArkTx
+      // expects none.
       const arkTx = Transaction.fromPSBT(base64.decode(psbts.arkTxPsbtB64));
       const checkpoints = psbts.checkpointPsbtsB64.map((c) =>
         Transaction.fromPSBT(base64.decode(c)),
       );
-      const { expected } = psbts;
-      if (expected.feeArkAddress && expected.feeAmountSats) {
-        verifyReleaseArkTx(
-          { arkTx, checkpoints },
-          {
-            escrowOutpoint: expected.escrowOutpoint,
-            buyerArkAddress: expected.buyerArkAddress,
-            buyerAmountSats: BigInt(expected.buyerAmountSats),
-            feeArkAddress: expected.feeArkAddress,
-            feeAmountSats: BigInt(expected.feeAmountSats),
-          },
-        );
-      } else {
-        verifyBuyerOnlyRelease(
-          { arkTx, checkpoints },
-          {
-            escrowOutpoint: expected.escrowOutpoint,
-            buyerArkAddress: expected.buyerArkAddress,
-            buyerAmountSats: BigInt(expected.buyerAmountSats),
-          },
-        );
-      }
+      verifyReleaseArkTx(
+        { arkTx, checkpoints },
+        {
+          escrowOutpoint: psbts.expected.escrowOutpoint,
+          buyerArkAddress: psbts.expected.buyerArkAddress,
+          buyerAmountSats: BigInt(psbts.expected.buyerAmountSats),
+          feeArkAddress: psbts.expected.feeArkAddress,
+          feeAmountSats: BigInt(psbts.expected.feeAmountSats),
+        },
+      );
 
       const { secretKey } = deriveOfferKey(wallet.seed, offerId);
       const sellerSignedArkTx = signEscrowArkTx(
