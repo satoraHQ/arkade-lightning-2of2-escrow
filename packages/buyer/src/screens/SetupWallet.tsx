@@ -13,7 +13,8 @@ export function SetupWallet({
     <div className="card">
       <h2>Wallet</h2>
       <p className="muted">
-        32-byte random seed in localStorage, unencrypted. Per-take keys are
+        32-byte random seed, unencrypted, kept in a local file (and mirrored to
+        localStorage) so it survives clearing browser data. Per-take keys are
         derived deterministically.
       </p>
       <div className="row">
@@ -21,9 +22,9 @@ export function SetupWallet({
           {revealed ? 'hide' : 'reveal'} seed
         </button>
         <button
-          onClick={() => {
-            if (confirm('Clear the wallet?')) {
-              clearWallet();
+          onClick={async () => {
+            if (confirm('Clear the wallet? Any active escrows will become unrecoverable.')) {
+              await clearWallet();
               location.reload();
             }
           }}

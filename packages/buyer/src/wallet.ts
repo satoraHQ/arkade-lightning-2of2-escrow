@@ -11,26 +11,72 @@ export interface Wallet {
   seedHex: string;
 }
 
-export function loadOrCreateWallet(): Wallet {
-  let seedHex = localStorage.getItem(SEED_KEY);
-  let seed: Uint8Array;
-  if (seedHex) {
-    seed = hex.decode(seedHex);
-    if (seed.length !== 32) {
-      seed = crypto.getRandomValues(new Uint8Array(32));
-      seedHex = hex.encode(seed);
-      localStorage.setItem(SEED_KEY, seedHex);
-    }
-  } else {
-    seed = crypto.getRandomValues(new Uint8Array(32));
-    seedHex = hex.encode(seed);
-    localStorage.setItem(SEED_KEY, seedHex);
+const SEED_ENDPOINT = '/__wallet_seed';
+const HEX64 = /^[0-9a-f]{64}$/;
+
+/**
+ * Load the wallet seed, preferring the durable file served by the Vite dev
+ * plugin so it survives a localStorage wipe (cleared browser data, a new
+ * profile). On first run it migrates an existing localStorage seed into the
+ * file so active escrows aren't orphaned. In a production build (no dev
+ * endpoint) it falls back to localStorage only.
+ */
+export async function loadOrCreateWallet(): Promise<Wallet> {
+  // 1. Durable file seed is authoritative.
+  const fileSeed = await readFileSeed();
+  if (fileSeed) {
+    localStorage.setItem(SEED_KEY, fileSeed);
+    return toWallet(fileSeed);
   }
-  return { seed, seedHex };
+  // 2. No file yet: migrate an existing localStorage seed, else generate one.
+  const local = localStorage.getItem(SEED_KEY);
+  let seedHex =
+    local && HEX64.test(local)
+      ? local
+      : hex.encode(crypto.getRandomValues(new Uint8Array(32)));
+  // 3. Persist to the file; trust whatever the server ends up holding.
+  seedHex = (await writeFileSeed(seedHex)) ?? seedHex;
+  localStorage.setItem(SEED_KEY, seedHex);
+  return toWallet(seedHex);
 }
 
-export function clearWallet(): void {
+export async function clearWallet(): Promise<void> {
   localStorage.removeItem(SEED_KEY);
+  try {
+    await fetch(SEED_ENDPOINT, { method: 'DELETE' });
+  } catch {
+    // dev endpoint absent (production build) — clearing localStorage is enough
+  }
+}
+
+function toWallet(seedHex: string): Wallet {
+  return { seed: hex.decode(seedHex), seedHex };
+}
+
+async function readFileSeed(): Promise<string | null> {
+  try {
+    const res = await fetch(SEED_ENDPOINT);
+    if (!res.ok) return null;
+    const { seed } = await res.json();
+    return typeof seed === 'string' && HEX64.test(seed) ? seed : null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeFileSeed(seedHex: string): Promise<string | null> {
+  try {
+    const res = await fetch(SEED_ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ seed: seedHex }),
+    });
+    if (!res.ok) return null;
+    const { seed } = await res.json();
+    return typeof seed === 'string' && HEX64.test(seed) ? seed : null;
+  } catch {
+    return null;
+  }
 }
 
 export interface DerivedKey {

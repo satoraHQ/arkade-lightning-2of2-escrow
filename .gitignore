@@ -16,6 +16,9 @@ build/
 *.sqlite-shm
 *.sqlite-wal
 
+# Frontend wallet seed files (durable buyer/seller seeds).
+.wallet-seed-*
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

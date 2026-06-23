@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadOrCreateWallet } from './wallet.js';
+import { loadOrCreateWallet, type Wallet } from './wallet.js';
 import { api } from './api.js';
 import { SetupWallet } from './screens/SetupWallet.js';
 import { CreateOffer } from './screens/CreateOffer.js';
@@ -17,7 +17,12 @@ import {
 type Step = SellerStep;
 
 export function App() {
-  const [wallet] = useState(() => loadOrCreateWallet());
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  useEffect(() => {
+    loadOrCreateWallet()
+      .then(setWallet)
+      .catch((e) => console.error('[seller] wallet load failed:', e));
+  }, []);
   const [session, setSession] = useState(() => loadSession() ?? EMPTY_SESSION);
 
   useEffect(() => {
@@ -79,12 +84,21 @@ export function App() {
       .catch((e) => console.error('[seller] healthz failed:', e));
   }, []);
 
+  if (!wallet) {
+    return (
+      <div className="app">
+        <h1>Peach Escrow PoC — Seller</h1>
+        <p className="muted">loading wallet…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <h1>Peach Escrow PoC — Seller</h1>
       <div className="banner-warn">
         PoC ONLY. {networkLabel(network)}. Keys live unencrypted in
-        localStorage. Do not use with real funds.
+        localStorage.
       </div>
 
       <ol className="steps">
