@@ -1,6 +1,14 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { z } from 'zod';
 import type { NetworkName } from '@arkade-os/sdk';
+
+// The .env lives at the monorepo root, not in this package. Resolve it from
+// this file's location so it loads regardless of the process cwd (npm
+// workspace runs set cwd to packages/server).
+const here = dirname(fileURLToPath(import.meta.url));
+loadEnv({ path: resolve(here, '../../../.env') });
 
 const NetworkSchema = z.enum([
   'bitcoin',
