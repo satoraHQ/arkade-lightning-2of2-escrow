@@ -61,7 +61,7 @@ export function offerRouter(deps: OfferDeps): Router {
     const escrow = new EscrowVtxoScript({
       sellerPubKey: sellerPk,
       arbiterPubKey: peach.publicKey,
-      aspPubKey: ark.aspPubKey,
+      arkadeServerPubKey: ark.aspPubKey,
       exitTimelock: ark.exitTimelock,
     });
 

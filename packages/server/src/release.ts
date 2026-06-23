@@ -30,7 +30,7 @@ export interface BuildReleaseInputs {
 /** ASP-derived config for the escrow release, from the connected ArkContext. */
 function escrowConfig(ark: ArkContext): EscrowArkConfig {
   return {
-    aspPubKey: ark.aspPubKey,
+    arkadeServerPubKey: ark.aspPubKey,
     exitTimelock: ark.exitTimelock,
     serverUnrollScript: ark.serverUnrollScript,
     dust: ark.info.dust,
@@ -49,7 +49,7 @@ export function buildReleaseTx(
   const escrow = new EscrowVtxoScript({
     sellerPubKey: inputs.sellerPubKey,
     arbiterPubKey: peach.publicKey,
-    aspPubKey: ark.aspPubKey,
+    arkadeServerPubKey: ark.aspPubKey,
     exitTimelock: ark.exitTimelock,
   });
 
