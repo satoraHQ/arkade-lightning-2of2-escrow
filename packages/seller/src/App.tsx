@@ -136,6 +136,10 @@ export function App() {
           onFunded={(f) =>
             setSession((s) => ({ ...s, funding: f, step: 'release' }))
           }
+          onStartOver={() => {
+            clearSession();
+            setSession({ ...EMPTY_SESSION, step: 'create' });
+          }}
         />
       ) : null}
 

@@ -38,6 +38,7 @@ export function FundOffer({
   invoice: initialInvoice,
   onSwap,
   onFunded,
+  onStartOver,
 }: {
   wallet: Wallet;
   offerId: string;
@@ -49,6 +50,7 @@ export function FundOffer({
   invoice: string | null;
   onSwap: (swapId: string, invoice: string) => void;
   onFunded: (status: FundingStatus) => void;
+  onStartOver: () => void;
 }) {
   // The funding handle from `fundFromLightning`, when this page created the
   // swap. Null after a refresh (swapId/invoice come from the persisted
@@ -259,6 +261,27 @@ export function FundOffer({
       ) : null}
 
       {err ? <p className="error">{err}</p> : null}
+
+      <div className="row">
+        <button
+          onClick={() => {
+            // An invoice exists → a Lightning payment may be in flight, and
+            // abandoning loses track of it. Confirm before discarding.
+            if (
+              invoice &&
+              !window.confirm(
+                'Abandon this offer and start over? Any pending Lightning ' +
+                  'funding will no longer be tracked here.',
+              )
+            ) {
+              return;
+            }
+            onStartOver();
+          }}
+        >
+          start over
+        </button>
+      </div>
     </div>
   );
 }
