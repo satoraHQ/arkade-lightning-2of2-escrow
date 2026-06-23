@@ -25,6 +25,7 @@ export function App() {
   const [satoraApiUrl, setSatoraApiUrl] = useState<string | null>(null);
   const [hrp, setHrp] = useState<string | null>(null);
   const [feeBps, setFeeBps] = useState<number | null>(null);
+  const [network, setNetwork] = useState<string | null>(null);
   const [exitTimelock, setExitTimelock] = useState<{
     value: number;
     type: 'blocks' | 'seconds';
@@ -39,6 +40,7 @@ export function App() {
         setSatoraApiUrl(h.satoraApiUrl);
         setHrp(h.hrp);
         setFeeBps(h.feeBps);
+        setNetwork(h.network);
         setExitTimelock(h.exitTimelock);
         configureExplorers({ ark: h.arkExplorerUrl, l1: h.l1ExplorerUrl });
       })
@@ -49,8 +51,8 @@ export function App() {
     <div className="app">
       <h1>Peach Escrow PoC — Buyer</h1>
       <div className="banner-warn">
-        PoC ONLY. Mutinynet/signet. Keys live unencrypted in localStorage.
-        Do not use with real funds.
+        PoC ONLY. {networkLabel(network)}. Keys live unencrypted in
+        localStorage. Do not use with real funds.
       </div>
 
       <ol className="steps">
@@ -132,4 +134,10 @@ function cls(current: Step, target: Step): string {
   if (ci === ti) return 'active';
   if (ci > ti) return 'done';
   return '';
+}
+
+// Human label for the /healthz network name (`bitcoin` is mainnet).
+function networkLabel(network: string | null): string {
+  if (network === null) return 'connecting…';
+  return network === 'bitcoin' ? 'MAINNET' : network;
 }
