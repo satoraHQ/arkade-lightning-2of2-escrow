@@ -72,7 +72,7 @@ export function buildEscrowOptions(
   const options: EscrowScriptOptions = {
     sellerPubKey,
     arbiterPubKey: hex.decode(escrow.arbiterPubKey),
-    aspPubKey: hex.decode(escrow.aspPubKey),
+    arkadeServerPubKey: hex.decode(escrow.aspPubKey),
     exitTimelock: {
       value: BigInt(escrow.csvTimelock.value),
       type: escrow.csvTimelock.type,
