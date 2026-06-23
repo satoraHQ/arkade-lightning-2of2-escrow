@@ -18,10 +18,11 @@ Three terminals, one recipe each (requires [`just`](https://github.com/casey/jus
 and Node 20+):
 
 ```bash
-just install     # one-time: pull dependencies for all workspaces
-just server      # http://localhost:3210  (auto-creates .env on first run)
-just seller      # http://localhost:5173
-just buyer       # http://localhost:5174  (server must be up)
+just install              # one-time: pull dependencies for all workspaces
+just server               # http://localhost:3210  (mutinynet; auto-creates .env)
+just server mainnet       # ...or run against mainnet (NETWORK=bitcoin)
+just seller               # http://localhost:5173
+just buyer                # http://localhost:5174  (server must be up)
 ```
 
 Faucet with testnet coins:
