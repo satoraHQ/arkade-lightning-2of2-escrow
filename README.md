@@ -164,7 +164,7 @@ to itself.
 ## Per-party signing primitive
 
 Each party uses Satora's
-[`signEscrowArkTx`](https://github.com/satoraHQ):
+[`signEscrowArkTx`](https://www.npmjs.com/package/@satora/escrow):
 
 ```ts
 import {signEscrowArkTx} from '@satora/escrow';
@@ -264,7 +264,8 @@ VITE_SERVER_URL=http://localhost:3210     # if running server elsewhere
 - Peach app: https://github.com/Peach2Peach/peach-app
 - Peach web: https://github.com/Peach2Peach/peach-web
 - Arkade TS SDK: https://github.com/arkade-os/ts-sdk
-- Satora (swap + escrow SDKs): https://github.com/satoraHQ
+- Satora swap SDK (npm): https://www.npmjs.com/package/@satora/swap
+- Satora escrow SDK (npm): https://www.npmjs.com/package/@satora/escrow
 - 2-of-3 escrow reference (Rust): https://github.com/lendasat/ark-escrow
 - Real Peach release tx (
   decoded): https://mempool.space/tx/31c0512162bdac7cf4a1d12a2be5f3706fbd93e3b0e6646e80d23c787a1234a0
