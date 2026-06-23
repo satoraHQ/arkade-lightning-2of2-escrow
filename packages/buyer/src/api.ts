@@ -43,6 +43,7 @@ export const api = {
       arkExplorerUrl: string;
       l1ExplorerUrl: string;
       peachFeeArkAddress: string;
+      feeBps: number;
       exitTimelock: { value: number; type: 'blocks' | 'seconds' };
     }>('/healthz'),
 };

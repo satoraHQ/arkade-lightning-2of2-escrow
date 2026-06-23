@@ -56,6 +56,9 @@ async function main() {
       arkExplorerUrl: config.arkExplorerUrl,
       l1ExplorerUrl: config.l1ExplorerUrl,
       peachFeeArkAddress,
+      // Peach commission in basis points. Buyers need it to compute the
+      // payout split (sellAmount - fee) the /take endpoint enforces.
+      feeBps: config.feeBps,
       // ASP's unilateral-exit timelock — same value the SDK Wallet uses
       // internally. Buyers need it so their payout DefaultVtxo address
       // matches what Wallet later derives for them.
