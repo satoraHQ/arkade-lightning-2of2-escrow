@@ -116,8 +116,13 @@ export interface ReleasePsbtResponse {
     escrowOutpoint: { txid: ArkTxid; vout: number };
     buyerArkAddress: ArkAddress;
     buyerAmountSats: number;
-    feeArkAddress: ArkAddress;
-    feeAmountSats: number;
+    /**
+     * Fee output. Omitted when the fee rounds to 0 sats — the release then
+     * has a single buyer output (no fee output), because the ASP rejects a
+     * 0-sat output (`AMOUNT_TOO_LOW`).
+     */
+    feeArkAddress?: ArkAddress;
+    feeAmountSats?: number;
   };
 }
 

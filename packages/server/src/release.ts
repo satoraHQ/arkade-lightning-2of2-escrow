@@ -1,4 +1,4 @@
-import type { Transaction } from '@arkade-os/sdk';
+import { ArkAddress, buildOffchainTx, type Transaction } from '@arkade-os/sdk';
 import {
   type BuiltEscrowRelease,
   buildEscrowReleaseTx,
@@ -38,8 +38,13 @@ function escrowConfig(ark: ArkContext): EscrowArkConfig {
 }
 
 /**
- * Build the cooperative release ark-tx and its checkpoint(s) via the
- * `@satora/escrow` SDK. Deterministic: same inputs → identical PSBT bytes.
+ * Build the cooperative release ark-tx and its checkpoint(s).
+ * Deterministic: same inputs → identical PSBT bytes.
+ *
+ * When `feeSats` is 0 we build a SINGLE buyer output ourselves: the
+ * `@satora/escrow` SDK always emits a buyer + fee pair, and a 0-sat fee
+ * output is rejected by the ASP (`AMOUNT_TOO_LOW`). With a fee we use the
+ * SDK's two-output builder.
  */
 export function buildReleaseTx(
   inputs: BuildReleaseInputs,
@@ -53,6 +58,10 @@ export function buildReleaseTx(
     exitTimelock: ark.exitTimelock,
   });
 
+  if (inputs.feeSats <= 0) {
+    return buildBuyerOnlyRelease(escrow, inputs, ark);
+  }
+
   return buildEscrowReleaseTx(
     escrow,
     inputs.funding,
@@ -64,6 +73,38 @@ export function buildReleaseTx(
     },
     escrowConfig(ark),
   );
+}
+
+/**
+ * Single-output cooperative release (buyer gets the full amount, no fee
+ * output). Mirrors what the SDK's `buildEscrowReleaseTx` does internally,
+ * minus the fee output. `buildOffchainTx` still adds the zero-value P2A
+ * fee-bump anchor.
+ */
+function buildBuyerOnlyRelease(
+  escrow: EscrowVtxoScript,
+  inputs: BuildReleaseInputs,
+  ark: ArkContext,
+): BuiltRelease {
+  const buyer = ArkAddress.decode(inputs.buyerArkAddress);
+  const amount = BigInt(inputs.buyerAmountSats);
+  const script =
+    amount < ark.info.dust ? buyer.subdustPkScript : buyer.pkScript;
+
+  const { arkTx, checkpoints } = buildOffchainTx(
+    [
+      {
+        txid: inputs.funding.txid,
+        vout: inputs.funding.vout,
+        value: inputs.funding.valueSats,
+        tapLeafScript: escrow.cooperativeLeaf(),
+        tapTree: escrow.encode(),
+      },
+    ],
+    [{ script, amount }],
+    ark.serverUnrollScript,
+  );
+  return { arkTx, checkpoints };
 }
 
 /** Sign input 0 of the ark-tx and each checkpoint with the peach key. Mutates. */
