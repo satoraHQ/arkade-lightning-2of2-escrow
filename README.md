@@ -266,6 +266,6 @@ VITE_SERVER_URL=http://localhost:3210     # if running server elsewhere
 - Arkade TS SDK: https://github.com/arkade-os/ts-sdk
 - Satora swap SDK (npm): https://www.npmjs.com/package/@satora/swap
 - Satora escrow SDK (npm): https://www.npmjs.com/package/@satora/escrow
-- 2-of-3 escrow reference (Rust): https://github.com/lendasat/ark-escrow
+- 2-of-3 escrow reference (Rust): https://github.com/satoraHQ/arkade-lightning-2of3-escrow
 - Real Peach release tx (
   decoded): https://mempool.space/tx/31c0512162bdac7cf4a1d12a2be5f3706fbd93e3b0e6646e80d23c787a1234a0
