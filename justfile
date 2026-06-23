@@ -11,7 +11,7 @@ install:
 
 # Run the Peach-style server (Express + sqlite, http://localhost:3210).
 server:
-    cp -n .env.example .env || true
+    cp -n .env.mutinynet.example .env || true
     npm run dev --workspace @arkade-peach-escrow-poc/server
 
 # Run the seller frontend (Vite, http://localhost:5173).
