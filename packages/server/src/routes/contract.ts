@@ -187,6 +187,7 @@ export function contractRouter(deps: ContractDeps): Router {
         return;
       }
 
+      const feeSats = offer.sellAmountSats - contract.buyerAmountSats;
       const built = buildReleaseTx(
         {
           sellerPubKey: hex.decode(offer.sellerPubKeyHex),
@@ -197,7 +198,7 @@ export function contractRouter(deps: ContractDeps): Router {
           },
           buyerArkAddress: contract.buyerPayoutArkAddress,
           buyerAmountSats: contract.buyerAmountSats,
-          feeSats: offer.sellAmountSats - contract.buyerAmountSats,
+          feeSats,
           peachFeeArkAddress,
         },
         ark,
@@ -217,8 +218,11 @@ export function contractRouter(deps: ContractDeps): Router {
           },
           buyerArkAddress: contract.buyerPayoutArkAddress,
           buyerAmountSats: contract.buyerAmountSats,
-          feeArkAddress: peachFeeArkAddress,
-          feeAmountSats: offer.sellAmountSats - contract.buyerAmountSats,
+          // Fee output only exists when the fee is non-zero; otherwise the
+          // release is a single buyer output.
+          ...(feeSats > 0
+            ? { feeArkAddress: peachFeeArkAddress, feeAmountSats: feeSats }
+            : {}),
         },
       };
       res.json(response);
