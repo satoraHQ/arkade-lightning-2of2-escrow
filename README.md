@@ -9,7 +9,7 @@ the release together with the seller, paying the buyer directly to an Arkade
 address they control.
 
 > **PoC status.** Mutinynet/signet only. Keys held in browser localStorage with
-> no encryption. Do not use with real funds.
+> no encryption. 
 
 
 ## Quick start
@@ -246,7 +246,6 @@ NETWORK=mutinynet
 ARK_EXPLORER_URL=https://explorer.mutinynet.arkade.sh
 L1_EXPLORER_URL=https://mutinynet.com
 PORT=3210
-PEACH_SECRET_KEY_PATH=./peach-server.key
 DB_PATH=./peach-server.sqlite
 FEE_BPS=10
 ```

@@ -4,11 +4,12 @@ import { dirname, resolve } from 'node:path';
 import { z } from 'zod';
 import type { NetworkName } from '@arkade-os/sdk';
 
-// The .env lives at the monorepo root, not in this package. Resolve it from
-// this file's location so it loads regardless of the process cwd (npm
-// workspace runs set cwd to packages/server).
+// The .env and the peach seed both live at the monorepo root, not in this
+// package. Resolve from this file's location so they're found regardless of
+// the process cwd (npm workspace runs set cwd to packages/server).
 const here = dirname(fileURLToPath(import.meta.url));
-loadEnv({ path: resolve(here, '../../../.env') });
+const repoRoot = resolve(here, '../../..');
+loadEnv({ path: resolve(repoRoot, '.env') });
 
 const NetworkSchema = z.enum([
   'bitcoin',
@@ -23,7 +24,9 @@ const Schema = z.object({
   SATORA_API_URL: z.string().url().default('https://mutinynetswap.lendasat.com'),
   NETWORK: NetworkSchema,
   PORT: z.coerce.number().int().positive().default(3210),
-  PEACH_SECRET_KEY_PATH: z.string().default('./peach-server.key'),
+  PEACH_SECRET_KEY_PATH: z
+    .string()
+    .default(resolve(repoRoot, '.wallet-seed-server')),
   DB_PATH: z.string().default('./peach-server.sqlite'),
   FEE_BPS: z.coerce.number().int().nonnegative().default(10),
   PEACH_FEE_ARK_ADDRESS: z.string().optional(),
