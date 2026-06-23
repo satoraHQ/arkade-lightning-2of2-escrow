@@ -52,7 +52,7 @@ async function main() {
       // payout address with it, so it must match the ASP's network.
       hrp: ark.network.hrp,
       arkServerUrl: config.arkServerUrl,
-      lendaswapApiUrl: config.lendaswapApiUrl,
+      satoraApiUrl: config.satoraApiUrl,
       arkExplorerUrl: config.arkExplorerUrl,
       l1ExplorerUrl: config.l1ExplorerUrl,
       peachFeeArkAddress,

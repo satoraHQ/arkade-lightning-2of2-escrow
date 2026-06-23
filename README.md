@@ -105,7 +105,7 @@ the L1 equivalent of leaf A + leaf B above.
                                                                     -> offerId
 2. seller       POST /v1/offer/{id}/escrow { sellerPk, returnAddress }
                                                        -> escrowVtxoArkAddress
-3. seller       Lendaswap createLightningToArkadeSwap
+3. seller       Satora createLightningToArkadeSwap
                 claimArkade(swapId, { destinationAddress: escrowVtxoArkAddress })
                                                        (LN -> Ark VHTLC -> escrow)
 4. server       polls Arkade; on FUNDED, builds and stores pre-signed refund.
@@ -118,7 +118,7 @@ the L1 equivalent of leaf A + leaf B above.
 8. server       signs leaf A, requests ASP sig, merges, finalizes,
                 submits via arkProvider.submitTx, finalizeTx.
 9. buyer        receives VTXO. Optional next step:
-                - Lendaswap createArkadeToLightningSwap (LN exit), or
+                - Satora createArkadeToLightningSwap (LN exit), or
                 - Arkade SDK redeem-to-L1 (onchain exit).
 ```
 
@@ -163,11 +163,11 @@ to itself.
 
 ## Per-party signing primitive
 
-Each party uses Lendaswap's
-[`signEscrowArkTx`](https://github.com/lendasat/lendaswap-sdk/blob/main/ts-pure-sdk/src/escrow/index.ts):
+Each party uses Satora's
+[`signEscrowArkTx`](https://www.npmjs.com/package/@satora/escrow):
 
 ```ts
-import {signEscrowArkTx} from '@lendasat/lendaswap-sdk-pure';
+import {signEscrowArkTx} from '@satora/escrow';
 
 const {signedPsbt, txid} = signEscrowArkTx(receivedPsbtB64, sellerSecretKey);
 ```
@@ -197,7 +197,8 @@ the server sign a commitment over its pubkey.
 - TypeScript, Node 20+, ESM throughout.
 - npm workspaces.
 - `@arkade-os/sdk` for VtxoScript, `buildOffchainTx`, `arkProvider`.
-- `@lendasat/lendaswap-sdk-pure` for LN ↔ Ark swaps and `signEscrowArkTx`.
+- `@satora/swap`, `@satora/escrow`, `@satora/escrow-client` for LN ↔ Ark
+  swaps, escrow scripts, and `signEscrowArkTx`.
 - Server: Express, sqlite (better-sqlite3).
 - Frontends: Vite + React + TypeScript.
 
@@ -240,7 +241,7 @@ Mutinynet sample:
 
 ```
 ARK_SERVER_URL=https://mutinynet.arkade.sh
-LENDASWAP_API_URL=https://mutinynetswap.lendasat.com
+SATORA_API_URL=https://mutinynetswap.lendasat.com
 NETWORK=mutinynet
 ARK_EXPLORER_URL=https://explorer.mutinynet.arkade.sh
 L1_EXPLORER_URL=https://mutinynet.com
@@ -263,7 +264,8 @@ VITE_SERVER_URL=http://localhost:3210     # if running server elsewhere
 - Peach app: https://github.com/Peach2Peach/peach-app
 - Peach web: https://github.com/Peach2Peach/peach-web
 - Arkade TS SDK: https://github.com/arkade-os/ts-sdk
-- Lendaswap SDK: https://github.com/lendasat/lendaswap-sdk
+- Satora swap SDK (npm): https://www.npmjs.com/package/@satora/swap
+- Satora escrow SDK (npm): https://www.npmjs.com/package/@satora/escrow
 - 2-of-3 escrow reference (Rust): https://github.com/lendasat/ark-escrow
 - Real Peach release tx (
   decoded): https://mempool.space/tx/31c0512162bdac7cf4a1d12a2be5f3706fbd93e3b0e6646e80d23c787a1234a0

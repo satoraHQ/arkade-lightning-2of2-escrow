@@ -8,7 +8,7 @@ import { EscrowClient } from '@satora/escrow-client';
 import { Client, IdbSwapStorage, IdbWalletStorage } from '@satora/swap';
 
 /**
- * One swap Client per Lendaswap baseUrl. Persisted in IndexedDB so a refresh
+ * One swap Client per Satora baseUrl. Persisted in IndexedDB so a refresh
  * mid-withdrawal reuses the same depositor key tree. Injected into the
  * EscrowClient below (it structurally satisfies the swap surface).
  */
@@ -28,21 +28,21 @@ function getSwapClient(baseUrl: string): Promise<Client> {
 }
 
 /**
- * One EscrowClient per (lendaswapApiUrl, arkServerUrl) for the page lifetime.
+ * One EscrowClient per (satoraApiUrl, arkServerUrl) for the page lifetime.
  * Drives `withdrawToL1` (collaborative offboard) and `withdrawToLightning`
  * (Arkade→Lightning swap) for the buyer's released payout.
  */
 const cache = new Map<string, Promise<EscrowClient>>();
 
 export function getEscrowClient(
-  lendaswapApiUrl: string,
+  satoraApiUrl: string,
   arkServerUrl: string,
 ): Promise<EscrowClient> {
-  const key = `${lendaswapApiUrl}|${arkServerUrl}`;
+  const key = `${satoraApiUrl}|${arkServerUrl}`;
   let cached = cache.get(key);
   if (!cached) {
     cached = (async () => {
-      const swap = await getSwapClient(lendaswapApiUrl);
+      const swap = await getSwapClient(satoraApiUrl);
       return EscrowClient.create({
         swap,
         arkProvider: new RestArkProvider(arkServerUrl),

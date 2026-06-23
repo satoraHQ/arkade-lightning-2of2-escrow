@@ -62,15 +62,15 @@ export function App() {
   const { step, offerId, sellAmountSats, escrow, funding } = session;
   const setStep = (next: Step) => setSession((s) => ({ ...s, step: next }));
 
-  // Pull lendaswapApiUrl + arkServerUrl from server's healthz so the
+  // Pull satoraApiUrl + arkServerUrl from server's healthz so the
   // FundOffer screen can build the swap client and the Ark providers.
-  const [lendaswapApiUrl, setLendaswapApiUrl] = useState<string | null>(null);
+  const [satoraApiUrl, setSatoraApiUrl] = useState<string | null>(null);
   const [arkServerUrl, setArkServerUrl] = useState<string | null>(null);
   useEffect(() => {
     api
       .health()
       .then((h) => {
-        setLendaswapApiUrl(h.lendaswapApiUrl);
+        setSatoraApiUrl(h.satoraApiUrl);
         setArkServerUrl(h.arkServerUrl);
         configureExplorers({ ark: h.arkExplorerUrl });
       })
@@ -124,7 +124,7 @@ export function App() {
           offerId={offerId}
           escrow={escrow}
           amountSats={sellAmountSats}
-          lendaswapApiUrl={lendaswapApiUrl}
+          satoraApiUrl={satoraApiUrl}
           arkServerUrl={arkServerUrl}
           swapId={session.lnSwapId}
           invoice={session.lnInvoice}

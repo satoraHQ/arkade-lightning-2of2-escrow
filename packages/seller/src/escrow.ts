@@ -10,10 +10,10 @@ import { type EscrowScriptOptions, EscrowVtxoScript } from '@satora/escrow';
 import { EscrowClient } from '@satora/escrow-client';
 import { hex } from '@scure/base';
 import type { RegisterEscrowResponse } from '@arkade-peach-escrow-poc/shared';
-import { getLendaswapClient } from './lendaswap.js';
+import { getSatoraClient } from './satora.js';
 
 /**
- * One EscrowClient per (lendaswapApiUrl, arkServerUrl) for the lifetime of
+ * One EscrowClient per (satoraApiUrl, arkServerUrl) for the lifetime of
  * the page. It bundles the swap on-ramp (`@satora/swap` Client, injected)
  * with the escrow monitor, and is what drives `fundFromLightning`.
  *
@@ -26,14 +26,14 @@ const cache = new Map<
 >();
 
 export function getEscrowClient(
-  lendaswapApiUrl: string,
+  satoraApiUrl: string,
   arkServerUrl: string,
 ): Promise<{ client: EscrowClient; network: Network }> {
-  const key = `${lendaswapApiUrl}|${arkServerUrl}`;
+  const key = `${satoraApiUrl}|${arkServerUrl}`;
   let cached = cache.get(key);
   if (!cached) {
     cached = (async () => {
-      const swap = await getLendaswapClient(lendaswapApiUrl);
+      const swap = await getSatoraClient(satoraApiUrl);
       const arkProvider = new RestArkProvider(arkServerUrl);
       const indexerProvider = new RestIndexerProvider(arkServerUrl);
       const info = await arkProvider.getInfo();
