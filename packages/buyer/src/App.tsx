@@ -14,8 +14,6 @@ import { configureExplorers } from './explorer.js';
 
 type Step = 'wallet' | 'browse' | 'take' | 'await' | 'withdraw';
 
-const FEE_BPS = 10;
-
 export function App() {
   const [wallet] = useState(() => loadOrCreateWallet());
   const [step, setStep] = useState<Step>('wallet');
@@ -26,6 +24,7 @@ export function App() {
   const [arkServerUrl, setArkServerUrl] = useState<string | null>(null);
   const [satoraApiUrl, setSatoraApiUrl] = useState<string | null>(null);
   const [hrp, setHrp] = useState<string | null>(null);
+  const [feeBps, setFeeBps] = useState<number | null>(null);
   const [exitTimelock, setExitTimelock] = useState<{
     value: number;
     type: 'blocks' | 'seconds';
@@ -39,6 +38,7 @@ export function App() {
         setArkServerUrl(h.arkServerUrl);
         setSatoraApiUrl(h.satoraApiUrl);
         setHrp(h.hrp);
+        setFeeBps(h.feeBps);
         setExitTimelock(h.exitTimelock);
         configureExplorers({ ark: h.arkExplorerUrl, l1: h.l1ExplorerUrl });
       })
@@ -74,11 +74,11 @@ export function App() {
         />
       ) : null}
 
-      {step === 'take' && offer && aspPubKey && hrp && exitTimelock ? (
+      {step === 'take' && offer && aspPubKey && hrp && exitTimelock && feeBps !== null ? (
         <TakeOffer
           wallet={wallet}
           offer={offer}
-          feeBps={FEE_BPS}
+          feeBps={feeBps}
           aspPubKeyHex={aspPubKey}
           hrp={hrp}
           exitTimelock={exitTimelock}
@@ -89,7 +89,7 @@ export function App() {
         />
       ) : null}
 
-      {step === 'take' && (!offer || !aspPubKey || !hrp || !exitTimelock) ? (
+      {step === 'take' && (!offer || !aspPubKey || !hrp || !exitTimelock || feeBps === null) ? (
         <div className="card">
           <p className="muted">
             Loading ASP config from {`{server}`}/healthz...
