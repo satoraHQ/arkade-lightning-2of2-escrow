@@ -24,6 +24,7 @@ const Schema = z.object({
   NETWORK: NetworkSchema,
   PORT: z.coerce.number().int().positive().default(3210),
   PEACH_SECRET_KEY_PATH: z.string().default('./peach-server.key'),
+  DB_PATH: z.string().default('./peach-server.sqlite'),
   FEE_BPS: z.coerce.number().int().nonnegative().default(10),
   PEACH_FEE_ARK_ADDRESS: z.string().optional(),
   // Block explorers the frontends link to (served via /healthz). Defaults are
@@ -40,6 +41,7 @@ export const config = {
   network: parsed.NETWORK as NetworkName,
   port: parsed.PORT,
   peachSecretKeyPath: parsed.PEACH_SECRET_KEY_PATH,
+  dbPath: parsed.DB_PATH,
   feeBps: parsed.FEE_BPS,
   peachFeeArkAddress: parsed.PEACH_FEE_ARK_ADDRESS,
   arkExplorerUrl: parsed.ARK_EXPLORER_URL,

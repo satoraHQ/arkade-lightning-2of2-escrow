@@ -33,7 +33,7 @@ export function offerRouter(deps: OfferDeps): Router {
   router.post('/v1/offer', (req: Request, res: Response) => {
     const body = CreateOfferBody.parse(req.body);
     const id = randomUUID();
-    store.offers.set(id, {
+    store.saveOffer({
       id,
       sellAmountSats: body.sellAmountSats,
       status: 'PENDING_ESCROW',
@@ -69,6 +69,7 @@ export function offerRouter(deps: OfferDeps): Router {
     offer.escrowArkAddress = escrow.arkAddress(ark.network);
     offer.escrowPkScript = escrow.pkScript;
     offer.status = 'AWAITING_FUNDING';
+    store.saveOffer(offer);
 
     const response: RegisterEscrowResponse = {
       escrowVtxoArkAddress: offer.escrowArkAddress,

@@ -127,7 +127,7 @@ export function contractRouter(deps: ContractDeps): Router {
     }
 
     const contractId = randomUUID();
-    store.contracts.set(contractId, {
+    store.saveContract({
       id: contractId,
       offerId,
       buyerPubKeyHex: body.buyerPubKey,
@@ -138,6 +138,7 @@ export function contractRouter(deps: ContractDeps): Router {
       createdAt: Math.floor(Date.now() / 1000),
     });
     offer.status = 'TAKEN';
+    store.saveOffer(offer);
 
     const response: TakeOfferResponse = { contractId };
     res.status(201).json(response);
@@ -328,6 +329,8 @@ export function contractRouter(deps: ContractDeps): Router {
         contract.arkTxid = arkTxid;
         contract.status = 'RELEASED';
         offer.status = 'RELEASED';
+        store.saveContract(contract);
+        store.saveOffer(offer);
 
         const response: SubmitSellerSigResponse = { arkTxid };
         res.json(response);

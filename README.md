@@ -247,6 +247,7 @@ ARK_EXPLORER_URL=https://explorer.mutinynet.arkade.sh
 L1_EXPLORER_URL=https://mutinynet.com
 PORT=3210
 PEACH_SECRET_KEY_PATH=./peach-server.key
+DB_PATH=./peach-server.sqlite
 FEE_BPS=10
 ```
 
