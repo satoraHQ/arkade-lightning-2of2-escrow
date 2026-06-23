@@ -48,9 +48,9 @@ typecheck:
 build:
     npm run build
 
-# Wipe server local state: the peach hot key and the sqlite database.
+# Wipe server local state: the peach hot key (repo root) and the sqlite database.
 reset-server:
-    rm -f packages/server/peach-server.key packages/server/peach-server.sqlite packages/server/peach-server.sqlite-shm packages/server/peach-server.sqlite-wal
+    rm -f .wallet-seed-server packages/server/peach-server.sqlite packages/server/peach-server.sqlite-shm packages/server/peach-server.sqlite-wal
 
 # Delete the local .env so the next `just server <network>` regenerates it.
 reset-env:
