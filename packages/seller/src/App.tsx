@@ -66,12 +66,14 @@ export function App() {
   // FundOffer screen can build the swap client and the Ark providers.
   const [satoraApiUrl, setSatoraApiUrl] = useState<string | null>(null);
   const [arkServerUrl, setArkServerUrl] = useState<string | null>(null);
+  const [network, setNetwork] = useState<string | null>(null);
   useEffect(() => {
     api
       .health()
       .then((h) => {
         setSatoraApiUrl(h.satoraApiUrl);
         setArkServerUrl(h.arkServerUrl);
+        setNetwork(h.network);
         configureExplorers({ ark: h.arkExplorerUrl });
       })
       .catch((e) => console.error('[seller] healthz failed:', e));
@@ -81,8 +83,8 @@ export function App() {
     <div className="app">
       <h1>Peach Escrow PoC — Seller</h1>
       <div className="banner-warn">
-        PoC ONLY. Mutinynet/signet. Keys live unencrypted in localStorage.
-        Do not use with real funds.
+        PoC ONLY. {networkLabel(network)}. Keys live unencrypted in
+        localStorage. Do not use with real funds.
       </div>
 
       <ol className="steps">
@@ -162,4 +164,10 @@ function cls(current: Step, target: Step): string {
   if (ci === ti) return 'active';
   if (ci > ti) return 'done';
   return '';
+}
+
+// Human label for the /healthz network name (`bitcoin` is mainnet).
+function networkLabel(network: string | null): string {
+  if (network === null) return 'connecting…';
+  return network === 'bitcoin' ? 'MAINNET' : network;
 }
