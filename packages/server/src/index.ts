@@ -26,6 +26,7 @@ async function main() {
     new DefaultVtxo.Script({
       pubKey: peach.publicKey,
       serverPubKey: ark.aspPubKey,
+      csvTimelock: DefaultVtxo.Script.DEFAULT_TIMELOCK,
     })
       .address(ark.network.hrp, ark.aspPubKey)
       .encode();

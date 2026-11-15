@@ -3,7 +3,7 @@ import {
   RestArkProvider,
   RestIndexerProvider,
   networks,
-  type ArkInfo,
+  type OperatorInfo,
   type Network,
   type NetworkName,
   type RelativeTimelock,
@@ -13,7 +13,7 @@ import { hex } from '@scure/base';
 export interface ArkContext {
   provider: RestArkProvider;
   indexer: RestIndexerProvider;
-  info: ArkInfo;
+  info: OperatorInfo;
   network: Network;
   /** ASP's x-only pubkey (32 bytes), used in tapleaves and Ark addresses. */
   aspPubKey: Uint8Array;

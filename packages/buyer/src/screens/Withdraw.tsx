@@ -254,7 +254,7 @@ function openWallet(
     const { secretKey } = deriveTakeKey(pocWallet.seed, offerId);
     cached = Wallet.create({
       identity: SingleKey.fromPrivateKey(secretKey),
-      arkServerUrl,
+      service: { operatorUrl: arkServerUrl },
       exitTimelock: {
         value: BigInt(exitTimelock.value),
         type: exitTimelock.type,

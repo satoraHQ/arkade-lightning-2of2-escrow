@@ -10,23 +10,23 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arkade-os/sdk": "^0.4.32",
+    "@arkade-os/sdk": "^0.5.6",
     "@arkade-peach-escrow-poc/shared": "*",
-    "@noble/curves": "^2.2.0",
-    "@noble/hashes": "^2.0.0",
-    "@satora/escrow": "0.0.4",
-    "@satora/escrow-client": "0.0.4",
-    "@satora/swap": "0.0.4",
-    "@scure/base": "^2.0.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@satora/escrow": "0.1.3",
+    "@satora/escrow-client": "14.0.1",
+    "@satora/swap": "1.10.1",
+    "@scure/base": "^2.4.0",
     "qrcode.react": "^4.2.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^6.0.2",
-    "vite": "^8.0.16",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "vite": "^8.3.8",
     "vite-plugin-node-polyfills": "^0.28.0"
   }
 }

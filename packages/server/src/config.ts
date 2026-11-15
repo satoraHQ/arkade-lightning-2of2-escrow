@@ -9,7 +9,7 @@ import type { NetworkName } from '@arkade-os/sdk';
 // the process cwd (npm workspace runs set cwd to packages/server).
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../../..');
-loadEnv({ path: resolve(repoRoot, '.env') });
+loadEnv({ path: resolve(repoRoot, '.env'), quiet: true });
 
 const NetworkSchema = z.enum([
   'bitcoin',
