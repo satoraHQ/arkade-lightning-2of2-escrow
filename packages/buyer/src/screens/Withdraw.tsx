@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { SingleKey, Wallet } from '@arkade-os/sdk';
+import {
+  InMemoryContractRepository,
+  InMemoryWalletRepository,
+  SingleKey,
+  Wallet,
+} from '@arkade-os/sdk';
 import {
   classifyDestination,
   type WithdrawResult,
@@ -95,8 +100,9 @@ export function Withdraw({
         amountSats = availableSats;
       } else if (kind === 'lightning') {
         setProgress('quoting…');
-        amountSats = (await escrowClient.quoteLightningWithdrawal(availableSats))
-          .recipientSats;
+        amountSats = (
+          await escrowClient.quoteLightningWithdrawal(availableSats, trimmed)
+        ).recipientSats;
       }
 
       setProgress(`withdrawing to ${kind ? KIND_LABEL[kind] : 'destination'}…`);
@@ -255,6 +261,16 @@ function openWallet(
     cached = Wallet.create({
       identity: SingleKey.fromPrivateKey(secretKey),
       service: { operatorUrl: arkServerUrl },
+      // Each offer has its own payout key, so each Wallet needs its own
+      // storage. The SDK default is one shared IndexedDB ("arkade"): every
+      // per-offer wallet would then see the other offers' payout contracts,
+      // sum their balances, and fail to sign them
+      // (MissingSigningDescriptorError). In-memory is enough: the payout
+      // VTXO is re-discovered from the indexer on create.
+      storage: {
+        walletRepository: new InMemoryWalletRepository(),
+        contractRepository: new InMemoryContractRepository(),
+      },
       exitTimelock: {
         value: BigInt(exitTimelock.value),
         type: exitTimelock.type,
