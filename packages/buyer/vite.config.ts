@@ -27,5 +27,5 @@ export default defineConfig({
   // @arkade-os/sdk. Dedupe so the bundle has a single copy — otherwise
   // `EscrowVtxoScript extends VtxoScript` can hit two different VtxoScript
   // classes ("Class extends undefined").
-  resolve: { dedupe: ['@arkade-os/sdk', '@scure/base'] },
+  resolve: { dedupe: ['@arkade-os/sdk', '@scure/base', 'react', 'react-dom'] },
 });
